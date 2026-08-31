@@ -1,44 +1,81 @@
-* {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
 :root {
-  --deep: #43245a;
-  --dark: #2b1055;
-  --violet: #6c2bd9;
-  --violet-light: #8f5bff;
+  --deep: #2e1065;
+  --plum: #3b1a6e;
+  --violet: #6d28d9;
+  --violet-mid: #7c3aed;
+  --violet-light: #8b5cf6;
+  --violet-pale: #c4b5fd;
   --pink: #e84b7a;
-  --peach: #ff9a6b;
-  --sky-a: #c3e1ff;
-  --sky-b: #8fc4ff;
-  --sky-ink: #174ea6;
+  --ink: #1e1033;
+  --ink-secondary: #44355a;
+  --muted: #7c6f95;
+  --muted-light: #a093b8;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-dim: rgba(59, 26, 110, 0.04);
+  --surface-input: rgba(59, 26, 110, 0.045);
+  --surface-input-focus: rgba(59, 26, 110, 0.07);
+  --border: rgba(59, 26, 110, 0.12);
+  --border-strong: rgba(59, 26, 110, 0.22);
+  --border-focus: var(--violet-light);
+  --error-bg: rgba(232, 75, 122, 0.06);
+  --success-bg: rgba(34, 197, 94, 0.06);
   --white: #ffffff;
-  --plum: #43245a;
-  --lavender: #e9deff;
-  --ink: #43245a;
-  --muted: #85739f;
-  --soft: rgba(67, 36, 90, 0.05);
-  --card: #ffffff;
-  --border: rgba(67, 36, 90, 0.16);
-  --radius: 16px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --shadow-sm: 0 1px 2px rgba(46, 16, 101, 0.05);
+  --shadow-md: 0 4px 16px rgba(46, 16, 101, 0.08);
+  --shadow-lg: 0 12px 40px rgba(46, 16, 101, 0.12);
+  --shadow-xl: 0 20px 60px rgba(46, 16, 101, 0.14);
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 350ms cubic-bezier(0.22, 1, 0.36, 1);
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: var(--font);
   color: var(--ink);
-  background: var(--white);
+  background: var(--surface);
   min-height: 100vh;
   overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 ::selection {
   background: var(--violet-light);
   color: var(--white);
+}
+
+input,
+button,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--violet-light);
+  outline-offset: 2px;
 }
