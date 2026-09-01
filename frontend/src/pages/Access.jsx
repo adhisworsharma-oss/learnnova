@@ -11,10 +11,10 @@ export default function Access() {
       </div>
 
       <header className="cover-top">
-        <Link to="/" className="brand">
+        <span className="brand">
           <img src="/learnova-logo.png" alt="Learnova" className="brand-logo" />
           <span className="brand-name">Learnova</span>
-        </Link>
+        </span>
       </header>
 
       <main className="cover-main">
