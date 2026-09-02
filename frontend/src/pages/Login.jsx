@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/AuthLayout'
 import { AlertIcon, MailIcon, LockIcon, EyeIcon } from '../components/Icons'
+import { api, setToken } from '../api'
 
 export default function Login() {
   const [values, setValues] = useState({ email: '', password: '' })
@@ -9,12 +10,7 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
-  const submitTimer = useRef(null)
   const navigate = useNavigate()
-
-  useEffect(() => {
-    return () => clearTimeout(submitTimer.current)
-  }, [])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -33,15 +29,29 @@ export default function Login() {
     return err
   })()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setTouched({ email: true, password: true })
     if (Object.keys(errors).length > 0 || submitting) return
     setSubmitting(true)
-    submitTimer.current = setTimeout(() => {
+    setError(null)
+    try {
+      const data = await api('/auth/login', {
+        method: 'POST',
+        body: {
+          identifier: values.email.trim(),
+          password: values.password,
+        },
+      })
+      setToken(data.token)
+      navigate('/confirm', {
+        state: { mode: 'login', name: data.user.name },
+      })
+    } catch (err) {
+      setError(err.message)
+    } finally {
       setSubmitting(false)
-      navigate('/confirm', { state: { mode: 'login' } })
-    }, 1200)
+    }
   }
 
   const field = (name, config) => {

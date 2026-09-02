@@ -1,17 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/AuthLayout'
 import FormField from '../components/FormField'
-
-const generateMembershipId = () => {
-  const year = new Date().getFullYear()
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let code = ''
-  for (let i = 0; i < 6; i += 1) {
-    code += chars[Math.floor(Math.random() * chars.length)]
-  }
-  return `LRN-${year}-${code}`
-}
+import { api, setToken } from '../api'
 
 export default function SignUp() {
   const [values, setValues] = useState({
@@ -27,12 +18,8 @@ export default function SignUp() {
   const [touched, setTouched] = useState({})
   const [showPw, setShowPw] = useState({ password: false, confirmPassword: false })
   const [submitting, setSubmitting] = useState(false)
-  const submitTimer = useRef(null)
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
-
-  useEffect(() => {
-    return () => clearTimeout(submitTimer.current)
-  }, [])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -78,7 +65,7 @@ export default function SignUp() {
     return score
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setTouched({
       name: true,
@@ -91,17 +78,32 @@ export default function SignUp() {
     })
     if (Object.keys(errors).length === 0 && !submitting) {
       setSubmitting(true)
-      submitTimer.current = setTimeout(() => {
-        setSubmitting(false)
+      setError(null)
+      try {
+        const data = await api('/auth/register', {
+          method: 'POST',
+          body: {
+            name: values.name.trim(),
+            surname: values.surname.trim(),
+            email: values.email.trim(),
+            password: values.password,
+            dob: values.dob || undefined,
+          },
+        })
+        setToken(data.token)
         navigate('/confirm', {
           state: {
             mode: 'signup',
-            name: values.name,
-            email: values.email,
-            membershipId: generateMembershipId(),
+            name: data.user.name,
+            email: data.user.email,
+            membershipId: data.user.membershipId,
           },
         })
-      }, 1500)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setSubmitting(false)
+      }
     }
   }
 
@@ -143,6 +145,12 @@ export default function SignUp() {
           </div>
 
           <FormField {...fieldProps} label="Date of Birth" type="date" name="dob" placeholder="" index={7} />
+
+          {error && (
+            <div className="login-error" role="alert">
+              {error}
+            </div>
+          )}
 
           <button type="submit" className="submit-btn" disabled={submitting}>
             {submitting ? (

@@ -47,6 +47,15 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  overflow: hidden;
+  height: 100%;
+  overscroll-behavior: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+  width: 0;
 }
 
 body {
@@ -54,13 +63,26 @@ body {
   color: var(--ink);
   background: var(--surface);
   min-height: 100vh;
-  overflow-x: hidden;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  scrollbar-width: none;
   line-height: 1.5;
 }
 
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+
 #root {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100%;
+  overflow: hidden;
+}
+
+#root::-webkit-scrollbar {
+  display: none;
+  width: 0;
 }
 
 ::selection {

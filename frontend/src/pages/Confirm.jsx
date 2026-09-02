@@ -15,7 +15,7 @@ export default function Confirm() {
         </div>
 
         <h2 className="success-title">
-          {isSignup ? `Welcome, ${state.name}!` : 'Welcome back!'}
+          {isSignup ? `Welcome, ${state.name}!` : `Welcome back${state.name ? `, ${state.name}` : ''}!`}
         </h2>
 
         <p className="success-text">
