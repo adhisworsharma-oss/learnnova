@@ -44,9 +44,8 @@ export default function Login() {
         },
       })
       setToken(data.token)
-      navigate('/confirm', {
-        state: { mode: 'login', name: data.user.name },
-      })
+      localStorage.setItem('learnova_user', JSON.stringify(data.user))
+      navigate('/home')
     } catch (err) {
       setError(err.message)
     } finally {

@@ -27,8 +27,7 @@ export default function Cover() {
 
       <header className="cover-top">
         <span className="brand">
-          <img src="/learnova-logo.png" alt="Learnova" className="brand-logo" />
-          <span className="brand-name">Learnova</span>
+          <img src="/Logo of Learnova with Book Icon.png" alt="Learnova" className="brand-logo" />
         </span>
       </header>
 

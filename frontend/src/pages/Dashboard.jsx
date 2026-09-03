@@ -3,219 +3,204 @@ import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 
 const DEMO_BOOKS = [
-  { id: 1, title: 'Clean Code', author: 'Robert C. Martin', category: 'Computer Science', rating: 4.5, cover: null },
-  { id: 2, title: 'Atomic Habits', author: 'James Clear', category: 'Self-Development', rating: 4.8, cover: null },
-  { id: 3, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'History', rating: 4.6, cover: null },
-  { id: 4, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', category: 'Science', rating: 4.3, cover: null },
-  { id: 5, title: 'The Design of Everyday Things', author: 'Don Norman', category: 'Design', rating: 4.4, cover: null },
-  { id: 6, title: 'Deep Learning', author: 'Ian Goodfellow', category: 'Data Science', rating: 4.2, cover: null },
+  { id: 1, title: 'Clean Code', author: 'Robert C. Martin', category: 'Computer Science', rating: 4.5 },
+  { id: 2, title: 'Atomic Habits', author: 'James Clear', category: 'Self-Development', rating: 4.8 },
+  { id: 3, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'History', rating: 4.6 },
+  { id: 4, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', category: 'Science', rating: 4.3 },
+  { id: 5, title: 'The Design of Everyday Things', author: 'Don Norman', category: 'Design', rating: 4.4 },
+  { id: 6, title: 'Deep Learning', author: 'Ian Goodfellow', category: 'Data Science', rating: 4.2 },
 ]
 
-const DEMO_ACTIVITY = [
-  { id: 1, type: 'completed', book: 'Atomic Habits', time: '2 hours ago' },
-  { id: 2, type: 'started', book: 'Clean Code', time: '5 hours ago' },
-  { id: 3, type: 'bookmarked', book: 'Sapiens', time: '1 day ago' },
-  { id: 4, type: 'favorited', book: 'Thinking, Fast and Slow', time: '2 days ago' },
-  { id: 5, type: 'completed', book: 'The Pragmatic Programmer', time: '3 days ago' },
+const DEMO_FEED = [
+  { id: 1, user: 'Sarah K.', action: 'finished reading', book: 'Atomic Habits', time: '2 hours ago', avatar: 'S', reactions: 12, comments: 4 },
+  { id: 2, user: 'Alex M.', action: 'started reading', book: 'Clean Code', time: '4 hours ago', avatar: 'A', reactions: 8, comments: 2 },
+  { id: 3, user: 'Priya R.', action: 'recommended', book: 'Sapiens', time: '6 hours ago', avatar: 'P', reactions: 24, comments: 9 },
+  { id: 4, user: 'Jordan L.', action: 'bookmarked', book: 'Thinking, Fast and Slow', time: '1 day ago', avatar: 'J', reactions: 5, comments: 1 },
+  { id: 5, user: 'Maya T.', action: 'shared notes on', book: 'Deep Learning', time: '1 day ago', avatar: 'M', reactions: 18, comments: 7 },
+  { id: 6, user: 'Chris W.', action: 'joined the group', book: 'CS Study Circle', time: '2 days ago', avatar: 'C', reactions: 3, comments: 0 },
 ]
 
-const DEMO_STATS = {
-  totalBooks: 30,
-  booksRead: 12,
-  readingStreak: 7,
-  totalMinutes: 2340,
-  bookmarks: 18,
-  favorites: 9,
-}
+const DEMO_GROUPS = [
+  { id: 1, name: 'CS Study Circle', members: 34, color: '#5b4a8a' },
+  { id: 2, name: 'Bookworms United', members: 89, color: '#2d8a56' },
+  { id: 3, name: 'Data Science Hub', members: 56, color: '#2874a6' },
+]
+
+const DEMO_UPCOMING = [
+  { id: 1, title: 'CS Study Group — Algorithms', date: 'Sep 5', color: '#5b4a8a' },
+  { id: 2, title: 'Book Discussion: Atomic Habits', date: 'Sep 8', color: '#2d8a56' },
+  { id: 3, title: 'Data Science Workshop', date: 'Sep 12', color: '#2874a6' },
+]
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(DEMO_STATS)
-  const [currentBooks, setCurrentBooks] = useState([])
-  const [activity, setActivity] = useState(DEMO_ACTIVITY)
+  const [books, setBooks] = useState(DEMO_BOOKS)
+  const [feed, setFeed] = useState(DEMO_FEED)
   const [loading, setLoading] = useState(true)
+  const [postText, setPostText] = useState('')
   const user = JSON.parse(localStorage.getItem('learnova_user') || '{}')
+  const userName = user.name || 'User'
+  const userInitial = userName.charAt(0).toUpperCase()
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchFeed() {
       try {
-        const [statsRes, booksRes] = await Promise.all([
+        const [booksRes] = await Promise.all([
           api('/dashboard/stats'),
-          api('/reading/current'),
         ])
-        if (statsRes.data) setStats(statsRes.data)
-        if (booksRes.data) setCurrentBooks(booksRes.data.slice(0, 4))
       } catch {
-        setCurrentBooks(DEMO_BOOKS.slice(0, 4))
+        // keep demo data
       } finally {
         setLoading(false)
       }
     }
-    fetchData()
+    fetchFeed()
   }, [])
 
-  function getActivityIcon(type) {
-    switch (type) {
-      case 'completed': return '📖'
-      case 'started': return '📗'
-      case 'bookmarked': return '🔖'
-      case 'favorited': return '❤️'
-      default: return '📚'
+  function handlePost() {
+    if (!postText.trim()) return
+    const newPost = {
+      id: Date.now(),
+      user: userName,
+      action: 'posted',
+      book: postText.trim(),
+      time: 'Just now',
+      avatar: userInitial,
+      reactions: 0,
+      comments: 0,
     }
+    setFeed(prev => [newPost, ...prev])
+    setPostText('')
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-greeting">
-        <h1>Welcome back, {user.name || 'Student'}!</h1>
-        <p>Here's your reading overview for today.</p>
+    <div className="feed-layout">
+      <div className="feed-center">
+        {/* Create Post */}
+        <div className="feed-create">
+          <div className="feed-create-avatar">{userInitial}</div>
+          <div className="feed-create-input">
+            <input
+              type="text"
+              placeholder={`What are you reading, ${userName}?`}
+              value={postText}
+              onChange={e => setPostText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handlePost()}
+            />
+            <button className="feed-create-btn" onClick={handlePost}>Post</button>
+          </div>
+        </div>
+
+        {/* Quick Filters */}
+        <div className="feed-filters">
+          <button className="feed-filter-btn feed-filter-btn--active">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Reading
+          </button>
+          <button className="feed-filter-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Groups
+          </button>
+          <button className="feed-filter-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Events
+          </button>
+        </div>
+
+        {/* Feed Posts */}
+        <div className="feed-posts">
+          {feed.map(post => (
+            <div key={post.id} className="feed-post">
+              <div className="feed-post-header">
+                <div className="feed-post-avatar" style={{ background: getAvatarColor(post.avatar) }}>
+                  {post.avatar}
+                </div>
+                <div className="feed-post-meta">
+                  <strong>{post.user}</strong>
+                  <span>{post.action} <em>{post.book}</em></span>
+                  <time>{post.time}</time>
+                </div>
+              </div>
+              <div className="feed-post-actions">
+                <button className="feed-post-action">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                  {post.reactions}
+                </button>
+                <button className="feed-post-action">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  {post.comments}
+                </button>
+                <button className="feed-post-action">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  Share
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="stats-grid">
-        <div className="stat-card stat-card--primary">
-          <div className="stat-card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          </div>
-          <div className="stat-card-info">
-            <span className="stat-card-value">{stats.totalBooks}</span>
-            <span className="stat-card-label">Total Books</span>
-          </div>
-        </div>
-        <div className="stat-card stat-card--success">
-          <div className="stat-card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          </div>
-          <div className="stat-card-info">
-            <span className="stat-card-value">{stats.booksRead}</span>
-            <span className="stat-card-label">Books Read</span>
-          </div>
-        </div>
-        <div className="stat-card stat-card--warning">
-          <div className="stat-card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          </div>
-          <div className="stat-card-info">
-            <span className="stat-card-value">{stats.readingStreak}</span>
-            <span className="stat-card-label">Day Streak</span>
-          </div>
-        </div>
-        <div className="stat-card stat-card--info">
-          <div className="stat-card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div className="stat-card-info">
-            <span className="stat-card-value">{Math.floor(stats.totalMinutes / 60)}h</span>
-            <span className="stat-card-label">Reading Time</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="dashboard-grid">
-        <div className="dashboard-main">
-          <div className="section-card">
-            <div className="section-header">
-              <h2>Currently Reading</h2>
-              <Link to="/books" className="section-link">View All</Link>
-            </div>
-            <div className="current-books">
-              {currentBooks.map(book => (
-                <div key={book.id} className="current-book-card">
-                  <div className="current-book-cover">
-                    {book.cover ? (
-                      <img src={book.cover} alt={book.title} />
-                    ) : (
-                      <div className="current-book-cover-placeholder">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                      </div>
-                    )}
-                  </div>
-                  <div className="current-book-info">
-                    <h3>{book.title}</h3>
-                    <p>{book.author}</p>
-                    <div className="book-progress-bar">
-                      <div className="book-progress-fill" style={{ width: `${Math.floor(Math.random() * 80) + 10}%` }} />
-                    </div>
-                  </div>
+      {/* Right Sidebar */}
+      <aside className="feed-right">
+        <div className="feed-right-card">
+          <h3>Your Groups</h3>
+          <div className="feed-right-list">
+            {DEMO_GROUPS.map(g => (
+              <Link key={g.id} to="/groups" className="feed-right-item">
+                <div className="feed-right-item-avatar" style={{ background: g.color }}>
+                  {g.name.charAt(0)}
                 </div>
-              ))}
-              {currentBooks.length === 0 && !loading && (
-                <div className="empty-state">
-                  <p>No books in progress. <Link to="/books">Browse books</Link> to get started!</p>
+                <div className="feed-right-item-info">
+                  <strong>{g.name}</strong>
+                  <span>{g.members} members</span>
                 </div>
-              )}
-            </div>
+              </Link>
+            ))}
           </div>
-
-          <div className="section-card">
-            <div className="section-header">
-              <h2>Recommended For You</h2>
-              <Link to="/books" className="section-link">See More</Link>
-            </div>
-            <div className="recommended-grid">
-              {DEMO_BOOKS.slice(0, 3).map(book => (
-                <div key={book.id} className="recommended-card">
-                  <div className="recommended-cover">
-                    <div className="recommended-cover-placeholder">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                    </div>
-                  </div>
-                  <h4>{book.title}</h4>
-                  <p>{book.author}</p>
-                  <div className="recommended-rating">
-                    {'★'.repeat(Math.floor(book.rating))}{'☆'.repeat(5 - Math.floor(book.rating))}
-                    <span>{book.rating}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Link to="/groups" className="feed-right-more">See all groups</Link>
         </div>
 
-        <div className="dashboard-aside">
-          <div className="section-card">
-            <div className="section-header">
-              <h2>Recent Activity</h2>
-            </div>
-            <div className="activity-feed">
-              {activity.map(item => (
-                <div key={item.id} className="activity-item">
-                  <span className="activity-icon">{getActivityIcon(item.type)}</span>
-                  <div className="activity-info">
-                    <span>
-                      <strong>{item.type === 'completed' ? 'Finished' : item.type === 'started' ? 'Started reading' : item.type === 'bookmarked' ? 'Bookmarked' : 'Favorited'}</strong>{' '}
-                      {item.book}
-                    </span>
-                    <span className="activity-time">{item.time}</span>
-                  </div>
+        <div className="feed-right-card">
+          <h3>Upcoming Events</h3>
+          <div className="feed-right-list">
+            {DEMO_UPCOMING.map(ev => (
+              <Link key={ev.id} to="/events" className="feed-right-item">
+                <div className="feed-right-item-avatar" style={{ background: ev.color }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 </div>
-              ))}
-            </div>
+                <div className="feed-right-item-info">
+                  <strong>{ev.title}</strong>
+                  <span>{ev.date}</span>
+                </div>
+              </Link>
+            ))}
           </div>
-
-          <div className="section-card">
-            <div className="section-header">
-              <h2>Quick Stats</h2>
-            </div>
-            <div className="quick-stats">
-              <div className="quick-stat-row">
-                <span>Bookmarks</span>
-                <strong>{stats.bookmarks}</strong>
-              </div>
-              <div className="quick-stat-row">
-                <span>Favorites</span>
-                <strong>{stats.favorites}</strong>
-              </div>
-              <div className="quick-stat-row">
-                <span>Reading Streak</span>
-                <strong>{stats.readingStreak} days</strong>
-              </div>
-              <div className="quick-stat-row">
-                <span>Total Minutes</span>
-                <strong>{stats.totalMinutes.toLocaleString()}</strong>
-              </div>
-            </div>
-          </div>
+          <Link to="/events" className="feed-right-more">See all events</Link>
         </div>
-      </div>
+
+        <div className="feed-right-card">
+          <h3>Recommended</h3>
+          <div className="feed-right-list">
+            {DEMO_BOOKS.slice(0, 3).map(b => (
+              <Link key={b.id} to="/books" className="feed-right-item">
+                <div className="feed-right-item-avatar feed-right-item-avatar--book">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </div>
+                <div className="feed-right-item-info">
+                  <strong>{b.title}</strong>
+                  <span>{b.author}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <Link to="/books" className="feed-right-more">Browse library</Link>
+        </div>
+      </aside>
     </div>
   )
+}
+
+function getAvatarColor(initial) {
+  const colors = ['#5b4a8a', '#2d8a56', '#c0392b', '#2874a6', '#b8860b', '#7d3c98']
+  const index = (initial.charCodeAt(0) - 65) % colors.length
+  return colors[index]
 }

@@ -5,7 +5,7 @@ export default function BrandPanel() {
     <aside className="aside">
       <div className="aside-inner">
         <Link to="/" className="brand">
-          <img src="/learnova-logo.png" alt="Learnova" className="brand-logo" />
+          <img src="/Logo of Learnova with Book Icon.png" alt="Learnova" className="brand-logo" />
           <span className="brand-name">Learnova</span>
         </Link>
 
