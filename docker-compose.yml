@@ -11,12 +11,13 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/scripts/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./backend/scripts/schema-seed.sql:/docker-entrypoint-initdb.d/01-schema-seed.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
 
   backend:
     build: ./backend

@@ -59,15 +59,27 @@ app.use(errorHandler)
 
 const PORT = Number(process.env.PORT) || 5000
 
+async function waitForDb(retries = 30, delay = 2000) {
+  for (let i = 1; i <= retries; i++) {
+    try {
+      const conn = await pool.getConnection()
+      await conn.query('SELECT 1')
+      conn.release()
+      console.log('Database connection established.')
+      return true
+    } catch (err) {
+      console.log(`Waiting for database... (${i}/${retries})`)
+      if (i === retries) throw err
+      await new Promise((r) => setTimeout(r, delay))
+    }
+  }
+}
+
 async function start() {
   try {
-    const conn = await pool.getConnection()
-    await conn.query('SELECT 1')
-    conn.release()
-    console.log('Database connection established.')
+    await waitForDb()
   } catch (err) {
     console.error('Failed to connect to database:', err.message)
-    console.error('Check backend/.env DB_* settings and that MySQL is running.')
     process.exit(1)
   }
 
