@@ -8,7 +8,7 @@ services:
       MYSQL_USER: learnova
       MYSQL_PASSWORD: learnova2026
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/scripts/schema-seed.sql:/docker-entrypoint-initdb.d/01-schema-seed.sql
