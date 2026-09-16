@@ -4,69 +4,112 @@ import './Books.css'
 
 /* ------------------------------------------------------------------
    Library module — Learnova
+   Warm editorial-style digital library.
    Data comes from GET /api/books (with graceful demo fallback),
    favorites from /api/favorites and reading state from /api/reading.
 ------------------------------------------------------------------- */
 
 const COPY = {
   title: 'Library',
-  subtitle: 'Explore, discover, and keep track of every book in the Learnova collection.',
-  searchPlaceholder: 'Search by title, author, or topic…',
+  subtitle: 'Explore, discover, and keep track of your collection.',
+  searchPlaceholder: 'Search by title, author, topic, or category...',
 }
 
-const FILTERS = [
+const CATEGORIES = [
+  { id: 'all', label: 'All Categories' },
+  { id: 'Computer Science', label: 'Computer Science' },
+  { id: 'Data Science', label: 'Data Science' },
+  { id: 'Design', label: 'Design' },
+  { id: 'Business & Economics', label: 'Business & Economics' },
+  { id: 'Literature', label: 'Literature' },
+  { id: 'History', label: 'History' },
+  { id: 'Science', label: 'Science' },
+  { id: 'Self-Development', label: 'Self-Development' },
+]
+
+const COLLECTIONS = [
   { id: 'all', label: 'All Books' },
   { id: 'recent', label: 'Recently Added' },
   { id: 'favorites', label: 'Favorites' },
-  { id: 'fiction', label: 'Fiction' },
-  { id: 'nonfiction', label: 'Non-Fiction' },
-  { id: 'academic', label: 'Academic' },
-  { id: 'reference', label: 'Reference' },
 ]
-
-const GROUP_CATEGORIES = {
-  fiction: ['Literature'],
-  nonfiction: ['History', 'Science', 'Business & Economics', 'Self-Development'],
-  academic: ['Computer Science', 'Data Science'],
-  reference: ['Design'],
-}
 
 const SORT_OPTIONS = [
-  { id: 'title', label: 'Title (A–Z)' },
-  { id: 'author', label: 'Author (A–Z)' },
-  { id: 'rating', label: 'Top rated' },
-  { id: 'pages', label: 'Most pages' },
-  { id: 'newest', label: 'Newest first' },
+  { id: 'newest', label: 'Newest First' },
+  { id: 'oldest', label: 'Oldest First' },
+  { id: 'title', label: 'A – Z' },
+  { id: 'author', label: 'Author' },
+  { id: 'rating', label: 'Top Rated' },
 ]
 
-const CATEGORY_COLORS = {
-  'Computer Science': '#6c42b9',
-  'Data Science': '#2563eb',
-  'Design': '#db2777',
-  'Business & Economics': '#d97706',
-  'Literature': '#059669',
-  'History': '#7c3aed',
-  'Science': '#0891b2',
-  'Self-Development': '#ea580c',
+const CATEGORY_COVERS = {
+  'Computer Science': { bg: '#4a5568', accent: '#a0aec0' },
+  'Data Science': { bg: '#2d3748', accent: '#63b3ed' },
+  'Design': { bg: '#553c9a', accent: '#d6bcfa' },
+  'Business & Economics': { bg: '#744210', accent: '#fbd38d' },
+  'Literature': { bg: '#22543d', accent: '#9ae6b4' },
+  'History': { bg: '#742a2a', accent: '#fc8181' },
+  'Science': { bg: '#1a365d', accent: '#90cdf4' },
+  'Self-Development': { bg: '#702459', accent: '#fbb6ce' },
+  'General': { bg: '#4a5568', accent: '#a0aec0' },
 }
 
-function categoryColor(category) {
-  return CATEGORY_COLORS[category] || '#7c6f95'
+function categoryCover(category) {
+  return CATEGORY_COVERS[category] || CATEGORY_COVERS['General']
+}
+
+const ISBN_MAP = {
+  'Clean Code': '9780132350884',
+  'Atomic Habits': '9780735211292',
+  'Sapiens': '9780062316110',
+  'Sapiens: A Brief History of Humankind': '9780062316110',
+  'Thinking, Fast and Slow': '9780374533557',
+  'The Design of Everyday Things': '9780465050659',
+  'Deep Learning': '9780262035613',
+  'Introduction to Algorithms': '9780262046305',
+  'Thinking in Systems': '9781603581486',
+  'The Lean Startup': '9780307887894',
+  'To Kill a Mockingbird': '9780061120084',
+  'Guns, Germs, and Steel': '9780393354324',
+  'Guns, Germs, and Steel: The Fates of Human Societies': '9780393354324',
+  'The Pragmatic Programmer': '9780135957059',
+  'Designing Data-Intensive Applications': '9781449373320',
+  'JavaScript: The Good Parts': '9780596517748',
+  'Structure and Interpretation of Computer Programs': '9780262510875',
+  'The Art of Computer Programming, Vol 1': '9780201896831',
+  'Python for Data Analysis': '9781098104030',
+  'The Elements of Statistical Learning': '9780387848570',
+  'Hands-On Machine Learning with Scikit-Learn': '9781098125974',
+  'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow': '9781098125974',
+  'Data Science from Scratch': '9781492041139',
+  "Don't Make Me Think": '9780321965516',
+  'Thinking with Type': '9781568989693',
+  'Zero to One': '9780804139298',
+  "The Innovator's Dilemma": '9781633691780',
+  'Freakonomics': '9780060731335',
+  '1984': '9780451524935',
+  'The Great Gatsby': '9780743273565',
+  'Pride and Prejudice': '9780141439518',
+  "A People's History of the United States": '9780062397348',
+  'A Brief History of Time': '9780553380163',
+  'The Selfish Gene': '9780198788607',
+  'Cosmos': '9780345539434',
+  'The Power of Habit': '9780812981605',
+  'Deep Work': '9781455586691',
 }
 
 const DEMO_BOOKS = [
-  { id: 1, title: 'Clean Code', author: 'Robert C. Martin', category: 'Computer Science', rating: 4.5, page_count: 464, level: 'Intermediate', description: 'A handbook of agile software craftsmanship covering naming, functions, comments, and error handling.' },
-  { id: 2, title: 'Atomic Habits', author: 'James Clear', category: 'Self-Development', rating: 4.8, page_count: 320, level: 'Beginner', description: 'An easy and proven way to build good habits and break bad ones.' },
-  { id: 3, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'History', rating: 4.6, page_count: 443, level: 'Beginner', description: 'A brief history of humankind — from ape to ruler of planet Earth.' },
+  { id: 1, title: 'Clean Code', author: 'Robert C. Martin', category: 'Computer Science', rating: 4.7, page_count: 464, level: 'Intermediate', description: 'A handbook of agile software craftsmanship covering naming, functions, comments, formatting and error handling.' },
+  { id: 2, title: 'Atomic Habits', author: 'James Clear', category: 'Self-Development', rating: 4.6, page_count: 320, level: 'Beginner', description: 'An easy and proven way to build good habits and break bad ones.' },
+  { id: 3, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'History', rating: 4.5, page_count: 464, level: 'Beginner', description: 'How a humble ape became the ruler of planet Earth.' },
   { id: 4, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', category: 'Science', rating: 4.3, page_count: 499, level: 'Intermediate', description: 'A journey into how the two systems of the mind shape our judgment.' },
-  { id: 5, title: 'The Design of Everyday Things', author: 'Don Norman', category: 'Design', rating: 4.4, page_count: 368, level: 'Beginner', description: 'The ultimate guide to human-centered design.' },
+  { id: 5, title: 'The Design of Everyday Things', author: 'Don Norman', category: 'Design', rating: 4.5, page_count: 368, level: 'Beginner', description: 'Why design matters and how the best products are intuitive to use.' },
   { id: 6, title: 'Deep Learning', author: 'Ian Goodfellow', category: 'Data Science', rating: 4.2, page_count: 800, level: 'Advanced', description: 'An introduction to a broad range of topics in deep learning.' },
   { id: 7, title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', category: 'Computer Science', rating: 4.6, page_count: 1312, level: 'Advanced', description: 'The most comprehensive textbook on algorithms.' },
   { id: 8, title: 'Thinking in Systems', author: 'Donella H. Meadows', category: 'Science', rating: 4.5, page_count: 218, level: 'Beginner', description: 'A primer on systems thinking.' },
-  { id: 9, title: 'The Lean Startup', author: 'Eric Ries', category: 'Business & Economics', rating: 4.2, page_count: 336, level: 'Beginner', description: 'How constant innovation creates radically successful businesses.' },
-  { id: 10, title: 'To Kill a Mockingbird', author: 'Harper Lee', category: 'Literature', rating: 4.7, page_count: 336, level: 'Beginner', description: 'A classic of modern American literature.' },
-  { id: 11, title: 'Guns, Germs, and Steel', author: 'Jared Diamond', category: 'History', rating: 4.4, page_count: 480, level: 'Intermediate', description: 'The fates of human societies.' },
-  { id: 12, title: 'The Pragmatic Programmer', author: 'David Thomas', category: 'Computer Science', rating: 4.7, page_count: 352, level: 'Intermediate', description: 'Your journey to mastery — tips, tools, and techniques for modern software development.' },
+  { id: 9, title: 'The Lean Startup', author: 'Eric Ries', category: 'Business & Economics', rating: 4.3, page_count: 336, level: 'Beginner', description: 'How constant innovation creates radically successful businesses.' },
+  { id: 10, title: 'To Kill a Mockingbird', author: 'Harper Lee', category: 'Literature', rating: 4.4, page_count: 336, level: 'Beginner', description: 'The unforgettable novel of a childhood in a sleepy Southern town.' },
+  { id: 11, title: 'Guns, Germs, and Steel', author: 'Jared Diamond', category: 'History', rating: 4.2, page_count: 518, level: 'Intermediate', description: 'The fates of human societies examined through geography and environment.' },
+  { id: 12, title: 'The Pragmatic Programmer', author: 'David Thomas', category: 'Computer Science', rating: 4.6, page_count: 352, level: 'Intermediate', description: 'Your journey to mastery — tips, tools, and techniques for modern software development.' },
 ]
 
 function normalizeBook(b, index) {
@@ -92,23 +135,29 @@ function normalizeBook(b, index) {
 const DEMO = DEMO_BOOKS.map((b, i) => normalizeBook(b, i))
 
 function bookInitials(title) {
-  const words = String(title || '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
+  const words = String(title || '').trim().split(/\s+/).filter(Boolean)
   if (!words.length) return 'B'
-  const t = words
+  return words
     .slice(0, 2)
     .map(w => w.replace(/[^a-zA-Z0-9]/g, '').charAt(0).toUpperCase())
     .filter(Boolean)
-    .join('')
-  return t || 'B'
+    .join('') || 'B'
+}
+
+function coverUrl(book) {
+  if (book.cover) return book.cover
+  const isbn = book.isbn || ISBN_MAP[book.title]
+  if (isbn) {
+    const clean = isbn.replace(/[-\s]/g, '')
+    return `https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`
+  }
+  return ''
 }
 
 function formatDate(ms) {
-  if (!ms) return '—'
+  if (!ms) return '\u2014'
   const d = new Date(ms)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '\u2014'
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
@@ -117,8 +166,10 @@ function formatDate(ms) {
 function LibraryIcon({ size = 22 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      <line x1="9" y1="7" x2="15" y2="7" />
+      <line x1="9" y1="11" x2="13" y2="11" />
     </svg>
   )
 }
@@ -181,22 +232,48 @@ function StarIcon({ size = 13, filled = false }) {
   )
 }
 
-/* ----------------------------- Helpers ------------------------------ */
-
-function coverGradient(category) {
-  const c = categoryColor(category)
-  return {
-    background: `linear-gradient(165deg, ${c}2e 0%, ${c}12 58%, ${c}08 100%)`,
-  }
+function GridIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+      <rect x="14" y="14" width="7" height="7" />
+    </svg>
+  )
 }
 
-function chipStyle(category) {
-  const c = categoryColor(category)
-  return {
-    color: c,
-    background: `${c}17`,
-    borderColor: `${c}38`,
-  }
+function ListIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
+    </svg>
+  )
+}
+
+function FilterIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  )
+}
+
+function SortIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="4" y1="6" x2="11" y2="6" />
+      <line x1="4" y1="12" x2="8" y2="12" />
+      <line x1="4" y1="18" x2="6" y2="18" />
+      <polyline points="15 15 18 18 15 21" />
+      <line x1="18" y1="6" x2="18" y2="18" />
+    </svg>
+  )
 }
 
 /* ------------------------------ Component --------------------------- */
@@ -205,8 +282,10 @@ export default function Books() {
   const [books, setBooks] = useState(DEMO)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeFilter, setActiveFilter] = useState('all')
-  const [sortBy, setSortBy] = useState('title')
+  const [activeCategory, setActiveCategory] = useState('all')
+  const [activeCollection, setActiveCollection] = useState('all')
+  const [sortBy, setSortBy] = useState('newest')
+  const [viewMode, setViewMode] = useState('grid')
   const [favorites, setFavorites] = useState(() => new Set())
   const [bookmarks, setBookmarks] = useState(() => new Set())
 
@@ -340,67 +419,78 @@ export default function Books() {
 
   /* ---------- filtering + sorting ---------- */
 
-  const { visible, activeLabel } = useMemo(() => {
+  const { visible, stats } = useMemo(() => {
     const term = searchQuery.trim().toLowerCase()
+
+    const categories = new Set()
+    let favCount = 0
+    let recentCount = 0
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+
+    books.forEach(b => {
+      categories.add(b.category)
+      if (favorites.has(b.id)) favCount++
+      if (b.addedAt > thirtyDaysAgo) recentCount++
+    })
+
     const list = books.filter(b => {
       if (term) {
         const hay = `${b.title} ${b.author} ${b.description} ${b.category}`.toLowerCase()
         if (!hay.includes(term)) return false
       }
-      if (activeFilter === 'favorites') return favorites.has(b.id)
-      const cats = GROUP_CATEGORIES[activeFilter]
-      if (cats) return cats.includes(b.category)
+      if (activeCollection === 'favorites') return favorites.has(b.id)
+      if (activeCategory !== 'all' && b.category !== activeCategory) return false
       return true
     })
-    const key = activeFilter === 'recent' ? 'newest' : sortBy
+
     const sorted = [...list]
-    switch (key) {
+    const sortKey = activeCollection === 'recent' ? 'newest' : sortBy
+    switch (sortKey) {
       case 'author':
         sorted.sort((a, b) => a.author.localeCompare(b.author))
         break
       case 'rating':
         sorted.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1))
         break
-      case 'pages':
-        sorted.sort((a, b) => (b.pageCount ?? 0) - (a.pageCount ?? 0))
-        break
       case 'newest':
         sorted.sort((a, b) => b.addedAt - a.addedAt)
+        break
+      case 'oldest':
+        sorted.sort((a, b) => a.addedAt - b.addedAt)
         break
       default:
         sorted.sort((a, b) => a.title.localeCompare(b.title))
     }
-    const label = FILTERS.find(f => f.id === activeFilter)?.label || 'All Books'
-    return { visible: sorted, activeLabel: label }
-  }, [books, searchQuery, activeFilter, sortBy, favorites])
 
-  const hasActiveFilters = searchQuery.trim() !== '' || activeFilter !== 'all'
+    return {
+      visible: sorted,
+      stats: {
+        total: books.length,
+        categories: categories.size,
+        favorites: favCount,
+        recent: recentCount,
+      },
+    }
+  }, [books, searchQuery, activeCategory, activeCollection, sortBy, favorites])
 
-  function selectFilter(id) {
-    setActiveFilter(id)
-    if (id === 'recent') setSortBy('newest')
-  }
-
-  function handleSortChange(value) {
-    setSortBy(value)
-    if (activeFilter === 'recent') setActiveFilter('all')
-  }
+  const hasActiveFilters = searchQuery.trim() !== '' || activeCategory !== 'all' || activeCollection !== 'all' || sortBy !== 'newest'
 
   function clearFilters() {
     setSearchQuery('')
-    setActiveFilter('all')
-    setSortBy('title')
+    setActiveCategory('all')
+    setActiveCollection('all')
+    setSortBy('newest')
   }
 
   /* ---------- reading state for modal ---------- */
 
   function readingStatus() {
-    if (detailLoading) return { tone: 'neutral', label: 'Checking…' }
+    if (detailLoading) return { tone: 'neutral', label: 'Checking...' }
     const p = detailProgress
     if (!p || !p.status) return { tone: 'ok', label: 'Available' }
     if (p.status === 'reading') {
       const percent = p.pageCount ? Math.min(100, Math.round((p.currentPage / p.pageCount) * 100)) : 0
-      return { tone: 'info', label: `Reading · ${percent}%` }
+      return { tone: 'info', label: `Reading \u00b7 ${percent}%` }
     }
     if (p.status === 'completed') return { tone: 'ok', label: 'Completed' }
     if (p.status === 'paused') return { tone: 'warn', label: 'Paused' }
@@ -431,90 +521,139 @@ export default function Books() {
       <section className="books-hero">
         <div className="books-hero-top">
           <div className="lib-logo" aria-hidden="true">
-            <LibraryIcon size={26} />
+            <LibraryIcon size={24} />
           </div>
           <div className="books-hero-copy">
             <h1 className="books-title">{COPY.title}</h1>
             <p className="books-subtitle">{COPY.subtitle}</p>
           </div>
         </div>
+      </section>
 
-        <div className="books-toolbar">
-          <div className="books-search">
-            <SearchIcon className="books-search-icon" />
-            <input
-              type="text"
-              placeholder={COPY.searchPlaceholder}
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              aria-label="Search books by title, author, or topic"
-            />
-            {searchQuery && (
-              <button className="books-search-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">
-                <XIcon size={14} />
-              </button>
-            )}
-          </div>
+      {/* ---------- Dashboard Stats ---------- */}
+      <div className="books-stats">
+        <div className="books-stat-card">
+          <span className="books-stat-value">{stats.total}</span>
+          <span className="books-stat-label">Books</span>
+        </div>
+        <div className="books-stat-card">
+          <span className="books-stat-value">{stats.categories}</span>
+          <span className="books-stat-label">Categories</span>
+        </div>
+        <div className="books-stat-card">
+          <span className="books-stat-value">{stats.favorites}</span>
+          <span className="books-stat-label">Favorites</span>
+        </div>
+        <div className="books-stat-card">
+          <span className="books-stat-value">{stats.recent}</span>
+          <span className="books-stat-label">This Month</span>
+        </div>
+      </div>
 
-          <div className="books-sort">
-            <span className="books-sort-label">Sort</span>
-            <select value={sortBy} onChange={e => handleSortChange(e.target.value)} aria-label="Sort books">
-              {SORT_OPTIONS.map(o => (
-                <option key={o.id} value={o.id}>{o.label}</option>
-              ))}
-            </select>
-            <ChevronIcon className="books-sort-chevron" />
-          </div>
-
-          {hasActiveFilters && (
-            <button className="books-btn books-btn--ghost books-clear" onClick={clearFilters}>
-              <XIcon size={13} />
-              Clear filters
+      {/* ---------- Filters Toolbar ---------- */}
+      <div className="books-filters">
+        <div className="books-search">
+          <SearchIcon className="books-search-icon" />
+          <input
+            type="text"
+            placeholder={COPY.searchPlaceholder}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            aria-label="Search books by title, author, or topic"
+          />
+          {searchQuery && (
+            <button className="books-search-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">
+              <XIcon size={14} />
             </button>
           )}
         </div>
-      </section>
 
-      {/* ---------- Category chips ---------- */}
-      <div className="books-chips" role="group" aria-label="Browse library">
-        {FILTERS.map(f => {
-          const isActive = activeFilter === f.id
-          return (
+        <div className="books-filter-group">
+          <div className="books-select-wrap">
+            <label className="books-select-label">
+              <FilterIcon size={14} />
+              Category
+            </label>
+            <div className="books-select">
+              <select value={activeCategory} onChange={e => setActiveCategory(e.target.value)} aria-label="Filter by category">
+                {CATEGORIES.map(c => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
+              <ChevronIcon className="books-select-chevron" />
+            </div>
+          </div>
+
+          <div className="books-select-wrap">
+            <label className="books-select-label">Collection</label>
+            <div className="books-select">
+              <select value={activeCollection} onChange={e => setActiveCollection(e.target.value)} aria-label="Filter by collection">
+                {COLLECTIONS.map(c => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
+              <ChevronIcon className="books-select-chevron" />
+            </div>
+          </div>
+
+          <div className="books-select-wrap">
+            <label className="books-select-label">
+              <SortIcon size={14} />
+              Sort
+            </label>
+            <div className="books-select">
+              <select value={sortBy} onChange={e => setSortBy(e.target.value)} aria-label="Sort books">
+                {SORT_OPTIONS.map(o => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
+              </select>
+              <ChevronIcon className="books-select-chevron" />
+            </div>
+          </div>
+
+          <div className="books-view-toggle" role="radiogroup" aria-label="View mode">
             <button
-              key={f.id}
-              className={`books-chip ${isActive ? 'books-chip--active' : ''}`}
-              onClick={() => selectFilter(f.id)}
-              aria-pressed={isActive}
+              className={`books-view-btn ${viewMode === 'grid' ? 'books-view-btn--active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              aria-label="Grid view"
+              aria-pressed={viewMode === 'grid'}
             >
-              {f.label}
-              {f.id === 'favorites' && favorites.size > 0 && (
-                <span className="books-chip-count">{favorites.size}</span>
-              )}
+              <GridIcon size={16} />
             </button>
-          )
-        })}
+            <button
+              className={`books-view-btn ${viewMode === 'list' ? 'books-view-btn--active' : ''}`}
+              onClick={() => setViewMode('list')}
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
+            >
+              <ListIcon size={16} />
+            </button>
+          </div>
+        </div>
+
+        {hasActiveFilters && (
+          <button className="books-clear-btn" onClick={clearFilters}>
+            <XIcon size={13} />
+            Clear filters
+          </button>
+        )}
       </div>
 
       {/* ---------- Results header ---------- */}
       <div className="books-results">
         <div>
           <h2 className="books-section-title">
-            {searchQuery.trim() ? `Results for “${searchQuery.trim()}”` : activeLabel}
+            {searchQuery.trim() ? `Results for \u201c${searchQuery.trim()}\u201d` : 'All Books'}
           </h2>
           <p className="books-section-sub">
             Showing {visible.length} of {books.length} books
           </p>
         </div>
-        {hasActiveFilters && (
-          <button className="books-clear-text" onClick={clearFilters}>
-            Reset
-          </button>
-        )}
       </div>
 
       {/* ---------- Grid ---------- */}
       {loading ? (
-        <div className="books-grid" aria-label="Loading library">
+        <div className={`books-grid ${viewMode === 'list' ? 'books-grid--list' : ''}`} aria-label="Loading library">
           {Array.from({ length: 8 }).map((_, i) => (
             <div className="book-card book-card--skeleton" key={i} aria-hidden="true">
               <div className="skeleton-cover" />
@@ -527,62 +666,65 @@ export default function Books() {
           ))}
         </div>
       ) : visible.length > 0 ? (
-        <div className="books-grid">
+        <div className={`books-grid ${viewMode === 'list' ? 'books-grid--list' : ''}`}>
           {visible.map((book, i) => {
             const isFav = favorites.has(book.id)
+            const url = coverUrl(book)
             return (
               <article
                 key={book.id}
-                className="book-card"
+                className={`book-card ${viewMode === 'list' ? 'book-card--list' : ''}`}
                 onClick={() => openBook(book)}
-                style={{ animationDelay: `${Math.min(i, 9) * 35}ms` }}
+                style={{ animationDelay: `${Math.min(i, 9) * 40}ms` }}
               >
-                <div className="book-card-cover" style={{ ...coverGradient(book.category), borderColor: `${categoryColor(book.category)}45` }}>
-                  <button
-                    className="book-card-cover-btn"
-                    onClick={e => { e.stopPropagation(); openBook(book) }}
-                    aria-label={`View details for ${book.title}`}
+                <div className="book-card-cover">
+                  {url ? (
+                    <img
+                      className="book-card-img"
+                      src={url}
+                      alt={`Cover of ${book.title}`}
+                      loading="lazy"
+                      onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+                    />
+                  ) : null}
+                  <div
+                    className="book-card-fallback"
+                    style={{
+                      display: url ? 'none' : 'flex',
+                      background: `linear-gradient(145deg, ${categoryCover(book.category).bg}, ${categoryCover(book.category).bg}dd)`,
+                    }}
                   >
-                    <span className="book-cover-spine" />
-                    <span className="book-cover-cat" style={chipStyle(book.category)}>{book.category}</span>
-                    <span className="book-cover-initial" style={{ color: categoryColor(book.category) }}>
-                      {bookInitials(book.title)}
-                    </span>
-                    <span className="book-cover-glyph" style={{ color: `${categoryColor(book.category)}99` }}>
-                      <LibraryIcon size={20} />
-                    </span>
-                  </button>
+                    <span className="book-card-fallback-initial">{bookInitials(book.title)}</span>
+                    <span className="book-card-fallback-title">{book.title}</span>
+                  </div>
                   <button
                     className={`book-card-fav ${isFav ? 'book-card-fav--on' : ''}`}
                     onClick={e => { e.stopPropagation(); toggleFavorite(book.id) }}
                     aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
                     aria-pressed={isFav}
                   >
-                    <HeartIcon size={15} filled={isFav} />
+                    <HeartIcon size={14} filled={isFav} />
                   </button>
                 </div>
 
                 <div className="book-card-body">
+                  <span className="book-card-category">{book.category}</span>
                   <h3 className="book-card-title" title={book.title}>{book.title}</h3>
-                  <p className="book-card-author">by {book.author}</p>
-                  <div className="book-card-meta">
+                  <p className="book-card-author">{book.author}</p>
+                  <div className="book-card-footer">
                     {book.rating != null && (
-                      <span className="book-card-meta-item book-card-meta-item--rating">
+                      <span className="book-card-rating">
                         <StarIcon size={12} filled />
                         {Number(book.rating).toFixed(1)}
                       </span>
                     )}
-                    {book.pageCount > 0 && (
-                      <span className="book-card-meta-item">{book.pageCount} pages</span>
-                    )}
-                    {book.level && <span className="book-card-meta-item">{book.level}</span>}
+                    <button
+                      className="book-card-btn"
+                      onClick={e => { e.stopPropagation(); openBook(book) }}
+                    >
+                      View Details
+                    </button>
                   </div>
-                  <button
-                    className="books-btn books-btn--primary book-card-btn"
-                    onClick={e => { e.stopPropagation(); openBook(book) }}
-                  >
-                    View details
-                  </button>
                 </div>
               </article>
             )
@@ -591,28 +733,28 @@ export default function Books() {
       ) : (
         <div className="books-empty">
           <div className="books-empty-icon">
-            <LibraryIcon size={32} />
+            <LibraryIcon size={28} />
           </div>
           <h3>
             {books.length === 0
               ? 'The library is empty'
               : searchQuery.trim()
-                ? `No results for “${searchQuery.trim()}”`
-                : activeFilter === 'favorites'
+                ? `No results for \u201c${searchQuery.trim()}\u201d`
+                : activeCollection === 'favorites'
                   ? 'No favorites yet'
-                  : 'No books in this section'}
+                  : 'No books found'}
           </h3>
           <p>
             {books.length === 0
               ? 'New titles will appear here as they are added to the collection.'
               : searchQuery.trim()
                 ? 'Try a different keyword, or clear your filters to browse everything.'
-                : activeFilter === 'favorites'
+                : activeCollection === 'favorites'
                   ? 'Tap the heart on any book to save it here for quick access.'
-                  : 'Try a different section, or clear your filters to browse everything.'}
+                  : 'Try changing your search or filters.'}
           </p>
           {hasActiveFilters && (
-            <button className="books-btn books-btn--soft" onClick={clearFilters}>
+            <button className="books-btn-soft" onClick={clearFilters}>
               Clear filters
             </button>
           )}
@@ -631,15 +773,25 @@ export default function Books() {
               <XIcon size={16} />
             </button>
 
-            <div className="book-modal-cover-wrap" style={coverGradient(selectedBook.category)}>
-              <span className="book-cover-spine" />
-              <span className="book-cover-cat" style={chipStyle(selectedBook.category)}>{selectedBook.category}</span>
-              <span className="book-modal-cover-initial" style={{ color: categoryColor(selectedBook.category) }}>
-                {bookInitials(selectedBook.title)}
-              </span>
-              <span className="book-modal-cover-glyph" style={{ color: `${categoryColor(selectedBook.category)}99` }}>
-                <LibraryIcon size={30} />
-              </span>
+            <div className="book-modal-cover">
+              {coverUrl(selectedBook) ? (
+                <img
+                  className="book-modal-cover-img"
+                  src={coverUrl(selectedBook)}
+                  alt={`Cover of ${selectedBook.title}`}
+                  onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+                />
+              ) : null}
+              <div
+                className="book-modal-cover-fallback"
+                style={{
+                  display: coverUrl(selectedBook) ? 'none' : 'flex',
+                  background: `linear-gradient(145deg, ${categoryCover(selectedBook.category).bg}, ${categoryCover(selectedBook.category).bg}dd)`,
+                }}
+              >
+                <span className="book-modal-fallback-initial">{bookInitials(selectedBook.title)}</span>
+                <span className="book-modal-fallback-title">{selectedBook.title}</span>
+              </div>
             </div>
 
             <div className="book-modal-info">
@@ -684,19 +836,19 @@ export default function Books() {
                 </div>
                 <div className="book-modal-meta-row">
                   <dt>Level</dt>
-                  <dd>{selectedBook.level || '—'}</dd>
+                  <dd>{selectedBook.level || '\u2014'}</dd>
                 </div>
                 <div className="book-modal-meta-row">
                   <dt>Pages</dt>
-                  <dd>{selectedBook.pageCount || '—'}</dd>
+                  <dd>{selectedBook.pageCount || '\u2014'}</dd>
                 </div>
                 <div className="book-modal-meta-row">
                   <dt>Language</dt>
-                  <dd>{selectedBook.language || '—'}</dd>
+                  <dd>{selectedBook.language || '\u2014'}</dd>
                 </div>
                 <div className="book-modal-meta-row">
                   <dt>ISBN</dt>
-                  <dd>{selectedBook.isbn || '—'}</dd>
+                  <dd>{selectedBook.isbn || '\u2014'}</dd>
                 </div>
                 <div className="book-modal-meta-row">
                   <dt>Added</dt>
@@ -706,7 +858,7 @@ export default function Books() {
 
               <div className="book-modal-actions">
                 <button
-                  className="books-btn books-btn--primary book-modal-start"
+                  className="books-btn-primary book-modal-start"
                   onClick={() => handleStartReading(selectedBook)}
                   disabled={detailLoading || readingAction.state === 'busy' || readingAction.state === 'ok' || detailProgress?.status === 'completed'}
                 >
@@ -716,7 +868,7 @@ export default function Books() {
                 </button>
 
                 <button
-                  className={`books-btn ${favorites.has(selectedBook.id) ? 'books-btn--soft-active books-btn--fav' : 'books-btn--outline'}`}
+                  className={`book-modal-fav-btn ${favorites.has(selectedBook.id) ? 'book-modal-fav-btn--on' : ''}`}
                   onClick={() => toggleFavorite(selectedBook.id)}
                   aria-pressed={favorites.has(selectedBook.id)}
                 >
@@ -725,7 +877,7 @@ export default function Books() {
                 </button>
 
                 <button
-                  className="books-btn books-btn--icon"
+                  className="book-modal-bookmark-btn"
                   onClick={() => toggleBookmark(selectedBook.id)}
                   aria-label={bookmarks.has(selectedBook.id) ? 'Remove bookmark' : 'Bookmark this book'}
                   aria-pressed={bookmarks.has(selectedBook.id)}
