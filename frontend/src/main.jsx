@@ -15,6 +15,7 @@ import Confirm from './pages/Confirm.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Books from './pages/Books.jsx'
 import Groups from './pages/Groups.jsx'
+import GroupDetail from './pages/GroupDetail.jsx'
 import Profile from './pages/Profile.jsx'
 import Events from './pages/Events.jsx'
 import Settings from './pages/Settings.jsx'
@@ -39,6 +40,7 @@ function Root() {
             <Route path="/home" element={<Dashboard />} />
             <Route path="/books" element={<Books />} />
             <Route path="/groups" element={<Groups />} />
+            <Route path="/groups/:id" element={<GroupDetail />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/events" element={<Events />} />
             <Route path="/settings" element={<Settings />} />
