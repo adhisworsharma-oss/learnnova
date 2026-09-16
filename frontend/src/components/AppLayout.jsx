@@ -22,7 +22,7 @@ export default function AppLayout() {
       <header className="topbar">
         <div className="topbar-left">
           <NavLink to="/home" className="topbar-brand">
-            <img src="/Logo of Learnova with Book Icon.png" alt="Learnova" className="topbar-logo" />
+            <img src="/library-icon.svg" alt="Learnova" className="topbar-logo" />
             <span className="topbar-brand-text">Learnova</span>
           </NavLink>
           <div className="topbar-search">
