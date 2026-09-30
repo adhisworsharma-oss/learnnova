@@ -9,34 +9,54 @@ export function generateMembershipId() {
   return `LRN-${year}-${code}`
 }
 
-function parseInterests(value) {
-  if (value == null) return []
-  if (Array.isArray(value)) return value
-  if (typeof value === 'object') return value.interests ?? []
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value)
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  }
-  return []
+function toDateOnly(value) {
+  if (!value) return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
 }
 
-export function normalizeUser(row) {
-  if (!row) return null
+function plain(doc) {
+  if (!doc) return null
+  return typeof doc.toObject === 'function' ? doc.toObject() : doc
+}
+
+export function normalizeUser(doc) {
+  const user = plain(doc)
+  if (!user) return null
   return {
-    id: row.id,
-    name: row.name,
-    surname: row.surname,
-    email: row.email,
-    membershipId: row.membership_id,
-    dob: row.dob ? new Date(row.dob).toISOString().slice(0, 10) : null,
-    profilePicture: row.profile_picture ?? null,
-    interests: parseInterests(row.interests),
-    createdAt: row.created_at,
+    id: String(user._id),
+    name: user.name,
+    surname: user.surname,
+    email: user.email,
+    membershipId: user.membershipId,
+    dob: toDateOnly(user.dob),
+    profilePicture: user.profilePicture ?? null,
+    interests: Array.isArray(user.interests) ? user.interests : [],
+    createdAt: user.createdAt,
   }
+}
+
+export function mapBook(doc) {
+  const book = plain(doc)
+  if (!book) return null
+  return {
+    id: String(book._id),
+    title: book.title,
+    author: book.author,
+    cover: book.cover ?? null,
+    description: book.description ?? null,
+    category: book.category ?? null,
+    pageCount: book.pageCount,
+    isbn: book.isbn ?? null,
+    rating: book.rating ?? null,
+    language: book.language,
+    level: book.level ?? null,
+    addedAt: book.addedAt,
+  }
+}
+
+export function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 export function asyncHandler(fn) {

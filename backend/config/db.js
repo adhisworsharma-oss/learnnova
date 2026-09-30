@@ -1,20 +1,22 @@
-import mysql from 'mysql2/promise'
+import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 
 dotenv.config()
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || '127.0.0.1',
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  namedPlaceholders: true,
-  charset: 'utf8mb4',
-  dateStrings: false,
-})
+const DB_HOST = process.env.DB_HOST || '127.0.0.1'
+const DB_PORT = Number(process.env.DB_PORT) || 27017
+const DB_NAME = process.env.DB_NAME || 'learnova'
+const userInfo = process.env.DB_USER
+  ? `${encodeURIComponent(process.env.DB_USER)}:${encodeURIComponent(process.env.DB_PASSWORD || '')}@`
+  : ''
 
-export default pool
+const uri =
+  process.env.DB_URI || `mongodb://${userInfo}${DB_HOST}:${DB_PORT}/${DB_NAME}`
+
+export function connectDb() {
+  return mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 5000,
+  })
+}
+
+export default mongoose

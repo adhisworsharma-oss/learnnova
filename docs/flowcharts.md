@@ -142,14 +142,14 @@ flowchart TD
 flowchart TD
     A[View Book] --> B{User Action}
     B -->|Bookmark| C[POST /api/bookmarks/:bookId]
-    C --> D[INSERT IGNORE into bookmarks]
+    C --> D[Upsert bookmark in bookmarks]
     D --> E[Log 'bookmarked' in History]
     E --> F[Show Bookmark Icon Filled]
     B -->|Unbookmark| G[DELETE /api/bookmarks/:bookId]
     G --> H[Remove from bookmarks]
     H --> I[Show Bookmark Icon Empty]
     B -->|Favorite| J[POST /api/favorites/:bookId]
-    J --> K[INSERT IGNORE into favorites]
+    J --> K[Upsert favorite in favorites]
     K --> L[Log 'favorited' in History]
     L --> M[Show Favorite Icon Filled]
     B -->|Unfavorite| N[DELETE /api/favorites/:bookId]
@@ -251,11 +251,13 @@ flowchart TD
     A[git clone repository] --> B[docker compose up --build]
     B --> C[Build Backend Image]
     B --> D[Build Frontend Image]
-    B --> E[Pull MySQL Image]
-    C --> F[Start MySQL Container]
+    B --> E[Pull MongoDB Image]
+    C --> F[Start MongoDB Container]
     D --> G[Start Frontend Container]
     E --> F
-    F --> H[Health Check: mysqladmin ping]
+    B --> H1[Seed Books via db:init]
+    H1 --> F
+    F --> H[Health Check: mongosh ping]
     H -->|Healthy| I[Start Backend Container]
     H -->|Not Ready| H
     I --> J[Wait for DB Connection]
@@ -277,7 +279,7 @@ flowchart TD
     C -->|JWT Validation| D{Auth Middleware}
     D -->|Valid| E[Route Handler]
     D -->|Invalid| F[401 Response]
-    E -->|SQL Query| G[MySQL :3306]
+    E -->|Mongoose Query| G[MongoDB :27017]
     G -->|Result Set| E
     E -->|JSON Response| C
     C -->|JSON Response| B

@@ -3,7 +3,7 @@ import express from 'express'
 import helmet from 'helmet'
 import cors from 'cors'
 import rateLimit from 'express-rate-limit'
-import pool from './config/db.js'
+import { connectDb } from './config/db.js'
 import authRoutes from './routes/auth.js'
 import bookRoutes from './routes/books.js'
 import readingRoutes from './routes/reading.js'
@@ -62,9 +62,7 @@ const PORT = Number(process.env.PORT) || 5000
 async function waitForDb(retries = 30, delay = 2000) {
   for (let i = 1; i <= retries; i++) {
     try {
-      const conn = await pool.getConnection()
-      await conn.query('SELECT 1')
-      conn.release()
+      await connectDb()
       console.log('Database connection established.')
       return true
     } catch (err) {

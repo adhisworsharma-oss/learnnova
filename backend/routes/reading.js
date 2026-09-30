@@ -1,6 +1,9 @@
 import { Router } from 'express'
 import { body, param, validationResult } from 'express-validator'
-import pool from '../config/db.js'
+import mongoose from 'mongoose'
+import Book from '../models/Book.js'
+import ReadingProgress from '../models/ReadingProgress.js'
+import ReadingHistory from '../models/ReadingHistory.js'
 import { protect } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../utils/helpers.js'
 
@@ -15,43 +18,37 @@ const validate = (req, res, next) => {
   next()
 }
 
-const validateBookId = [param('bookId').isInt({ min: 1 }).withMessage('Invalid book id.')]
+const validateBookId = [param('bookId').isMongoId().withMessage('Invalid book id.')]
 
 async function ensureBook(bookId) {
-  const [[book]] = await pool.query('SELECT id, page_count AS pageCount FROM books WHERE id = ?', [bookId])
+  if (!mongoose.isValidObjectId(bookId)) throw new ApiError(400, 'Invalid book id.')
+  const book = await Book.findById(bookId).lean()
   if (!book) throw new ApiError(404, 'Book not found.')
   return book
 }
 
 router.post(
   '/start',
-  [body('bookId').isInt({ min: 1 }).withMessage('Invalid book id.')],
+  [body('bookId').isMongoId().withMessage('Invalid book id.')],
   validate,
   asyncHandler(async (req, res) => {
-    const bookId = Number(req.body.bookId)
-    await ensureBook(bookId)
+    const book = await ensureBook(req.body.bookId)
 
-    await pool.query(
-      `INSERT INTO reading_progress (user_id, book_id, current_page, status)
-       VALUES (?, ?, 0, 'reading')
-       ON DUPLICATE KEY UPDATE status = IF(status = 'completed', status, 'reading')`,
-      [req.userId, bookId]
-    )
-    await pool.query(
-      'INSERT INTO reading_history (user_id, book_id, action) VALUES (?, ?, ?)',
-      [req.userId, bookId, 'opened']
-    )
+    const existing = await ReadingProgress.findOne({ user: req.userId, book: book._id })
+    if (!existing) {
+      await ReadingProgress.create({ user: req.userId, book: book._id, currentPage: 0, status: 'reading' })
+    } else if (existing.status !== 'completed') {
+      existing.status = 'reading'
+      await existing.save()
+    }
+    await ReadingHistory.create({ user: req.userId, book: book._id, action: 'opened' })
 
-    const [[progress]] = await pool.query(
-      `SELECT rp.*, b.page_count AS totalPages FROM reading_progress rp
-       JOIN books b ON b.id = rp.book_id WHERE rp.user_id = ? AND rp.book_id = ?`,
-      [req.userId, bookId]
-    )
+    const progress = await ReadingProgress.findOne({ user: req.userId, book: book._id }).lean()
     res.status(201).json({
       progress: {
-        bookId: progress.book_id,
-        currentPage: progress.current_page,
-        totalPages: progress.totalPages,
+        bookId: String(progress.book),
+        currentPage: progress.currentPage,
+        totalPages: book.pageCount,
         status: progress.status,
       },
     })
@@ -67,37 +64,36 @@ router.put(
   ],
   validate,
   asyncHandler(async (req, res) => {
-    const bookId = Number(req.params.bookId)
-    const book = await ensureBook(bookId)
+    const book = await ensureBook(req.params.bookId)
 
-    const [existing] = await pool.query(
-      'SELECT id, reading_time_minutes AS minutes FROM reading_progress WHERE user_id = ? AND book_id = ?',
-      [req.userId, bookId]
-    )
-    if (existing.length === 0) throw new ApiError(404, 'Start reading this book first.')
+    const progress = await ReadingProgress.findOne({ user: req.userId, book: book._id })
+    if (!progress) throw new ApiError(404, 'Start reading this book first.')
 
     let page = Number(req.body.currentPage)
     if (page > book.pageCount) page = book.pageCount
     const isCompleted = page >= book.pageCount
     const status = isCompleted ? 'completed' : 'reading'
-    const minutes = existing[0].minutes + (Number(req.body.minutesRead) || 0)
 
-    await pool.query(
-      `UPDATE reading_progress
-       SET current_page = ?, status = ?, reading_time_minutes = ?, last_read_at = NOW(),
-           completed_at = IF(? = 'completed', NOW(), completed_at)
-       WHERE user_id = ? AND book_id = ?`,
-      [page, status, minutes, status, req.userId, bookId]
-    )
+    progress.currentPage = page
+    progress.status = status
+    progress.readingTimeMinutes = progress.readingTimeMinutes + (Number(req.body.minutesRead) || 0)
+    progress.lastReadAt = new Date()
+    if (isCompleted) progress.completedAt = new Date()
+    await progress.save()
 
     if (isCompleted) {
-      await pool.query(
-        'INSERT INTO reading_history (user_id, book_id, action) VALUES (?, ?, ?)',
-        [req.userId, bookId, 'completed']
-      )
+      await ReadingHistory.create({ user: req.userId, book: book._id, action: 'completed' })
     }
 
-    res.json({ progress: { bookId, currentPage: page, totalPages: book.pageCount, status, readingTimeMinutes: minutes } })
+    res.json({
+      progress: {
+        bookId: String(book._id),
+        currentPage: page,
+        totalPages: book.pageCount,
+        status,
+        readingTimeMinutes: progress.readingTimeMinutes,
+      },
+    })
   })
 )
 
@@ -106,85 +102,120 @@ router.post(
   validateBookId,
   validate,
   asyncHandler(async (req, res) => {
-    const bookId = Number(req.params.bookId)
-    const book = await ensureBook(bookId)
+    const book = await ensureBook(req.params.bookId)
 
-    const [existing] = await pool.query(
-      'SELECT id FROM reading_progress WHERE user_id = ? AND book_id = ?',
-      [req.userId, bookId]
-    )
-    if (existing.length === 0) throw new ApiError(404, 'Start reading this book first.')
+    const progress = await ReadingProgress.findOne({ user: req.userId, book: book._id })
+    if (!progress) throw new ApiError(404, 'Start reading this book first.')
 
-    await pool.query(
-      `UPDATE reading_progress SET current_page = ?, status = 'completed',
-         last_read_at = NOW(), completed_at = NOW()
-       WHERE user_id = ? AND book_id = ?`,
-      [book.pageCount, req.userId, bookId]
-    )
-    await pool.query(
-      'INSERT INTO reading_history (user_id, book_id, action) VALUES (?, ?, ?)',
-      [req.userId, bookId, 'completed']
-    )
-    res.json({ progress: { bookId, currentPage: book.pageCount, totalPages: book.pageCount, status: 'completed' } })
+    progress.currentPage = book.pageCount
+    progress.status = 'completed'
+    progress.lastReadAt = new Date()
+    progress.completedAt = new Date()
+    await progress.save()
+
+    await ReadingHistory.create({ user: req.userId, book: book._id, action: 'completed' })
+    res.json({
+      progress: {
+        bookId: String(book._id),
+        currentPage: book.pageCount,
+        totalPages: book.pageCount,
+        status: 'completed',
+      },
+    })
   })
 )
 
 router.get(
   '/current',
   asyncHandler(async (req, res) => {
-    const [rows] = await pool.query(
-      `SELECT b.id AS bookId, b.title, b.author, b.cover, b.category,
-              rp.current_page AS currentPage, b.page_count AS pageCount, rp.status,
-              ROUND(rp.current_page / b.page_count * 100) AS percent,
-              rp.reading_time_minutes AS readingTimeMinutes,
-              rp.last_position AS lastPosition, rp.last_read_at AS lastReadAt
-       FROM reading_progress rp
-       JOIN books b ON b.id = rp.book_id
-       WHERE rp.user_id = ? AND rp.status = 'reading'
-       ORDER BY rp.last_read_at DESC`,
-      [req.userId]
-    )
-    res.json({ books: rows })
+    const rows = await ReadingProgress.find({ user: req.userId, status: 'reading' })
+      .sort({ lastReadAt: -1 })
+      .populate('book')
+      .lean()
+
+    res.json({
+      books: rows
+        .filter((r) => r.book)
+        .map((r) => ({
+          bookId: String(r.book._id),
+          title: r.book.title,
+          author: r.book.author,
+          cover: r.book.cover,
+          category: r.book.category,
+          currentPage: r.currentPage,
+          pageCount: r.book.pageCount,
+          status: r.status,
+          percent: r.book.pageCount ? Math.round((r.currentPage / r.book.pageCount) * 100) : 0,
+          readingTimeMinutes: r.readingTimeMinutes,
+          lastPosition: r.lastPosition,
+          lastReadAt: r.lastReadAt,
+        })),
+    })
   })
 )
 
 router.get(
   '/completed',
   asyncHandler(async (req, res) => {
-    const [rows] = await pool.query(
-      `SELECT b.id AS bookId, b.title, b.author, b.cover, b.category, b.page_count AS pageCount,
-              rp.completed_at AS completedAt, rp.reading_time_minutes AS readingTimeMinutes
-       FROM reading_progress rp JOIN books b ON b.id = rp.book_id
-       WHERE rp.user_id = ? AND rp.status = 'completed'
-       ORDER BY rp.completed_at DESC`,
-      [req.userId]
-    )
-    res.json({ books: rows })
+    const rows = await ReadingProgress.find({ user: req.userId, status: 'completed' })
+      .sort({ completedAt: -1 })
+      .populate('book')
+      .lean()
+
+    res.json({
+      books: rows
+        .filter((r) => r.book)
+        .map((r) => ({
+          bookId: String(r.book._id),
+          title: r.book.title,
+          author: r.book.author,
+          cover: r.book.cover,
+          category: r.book.category,
+          pageCount: r.book.pageCount,
+          completedAt: r.completedAt,
+          readingTimeMinutes: r.readingTimeMinutes,
+        })),
+    })
   })
 )
 
 router.get(
   '/history',
   asyncHandler(async (req, res) => {
-    const [rows] = await pool.query(
-      `SELECT rh.id, rh.book_id AS bookId, rh.action, rh.viewed_at AS viewedAt, b.title, b.author, b.cover, b.category,
-              rp.current_page AS currentPage, b.page_count AS pageCount, rp.status AS readingStatus
-       FROM reading_history rh
-       JOIN books b ON b.id = rh.book_id
-       LEFT JOIN reading_progress rp ON rp.user_id = rh.user_id AND rp.book_id = rh.book_id
-       WHERE rh.user_id = ?
-       ORDER BY rh.viewed_at DESC
-       LIMIT 60`,
-      [req.userId]
-    )
+    const history = await ReadingHistory.find({ user: req.userId })
+      .sort({ viewedAt: -1 })
+      .limit(60)
+      .populate('book')
+      .lean()
+
+    const bookIds = [...new Set(history.filter((h) => h.book).map((h) => h.book._id))]
+    const progressDocs = await ReadingProgress.find({
+      user: req.userId,
+      book: { $in: bookIds },
+    }).lean()
+    const progressMap = new Map(progressDocs.map((p) => [String(p.book), p]))
 
     const seen = new Set()
     const unique = []
-    for (const row of rows) {
-      if (seen.has(row.bookId)) continue
-      seen.add(row.bookId)
-      unique.push(row)
+    for (const h of history) {
+      if (!h.book || seen.has(String(h.book._id))) continue
+      seen.add(String(h.book._id))
+      const p = progressMap.get(String(h.book._id))
+      unique.push({
+        id: String(h._id),
+        bookId: String(h.book._id),
+        action: h.action,
+        viewedAt: h.viewedAt,
+        title: h.book.title,
+        author: h.book.author,
+        cover: h.book.cover,
+        category: h.book.category,
+        currentPage: p?.currentPage ?? 0,
+        pageCount: h.book.pageCount,
+        readingStatus: p?.status ?? null,
+      })
     }
+
     res.json({ history: unique })
   })
 )

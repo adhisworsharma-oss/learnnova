@@ -1,8 +1,11 @@
 import { Router } from 'express'
 import { body, validationResult } from 'express-validator'
-import pool from '../config/db.js'
+import mongoose from 'mongoose'
+import Book from '../models/Book.js'
+import ReadingProgress from '../models/ReadingProgress.js'
+import ReadingHistory from '../models/ReadingHistory.js'
 import { protect, optionalAuth } from '../middleware/auth.js'
-import { asyncHandler, ApiError } from '../utils/helpers.js'
+import { asyncHandler, ApiError, mapBook, escapeRegExp } from '../utils/helpers.js'
 
 const router = Router()
 
@@ -14,23 +17,14 @@ const validate = (req, res, next) => {
   next()
 }
 
-const BOOK_SELECT = `
-  SELECT b.id, b.title, b.author, b.cover, b.description, b.category, b.page_count AS pageCount,
-         b.isbn, b.rating, b.language, b.level, b.added_at AS addedAt
-  FROM books b
-`
-
-function mapBook(row) {
-  return { ...row }
-}
-
 router.get(
   '/categories',
   asyncHandler(async (_req, res) => {
-    const [rows] = await pool.query(
-      'SELECT category, COUNT(*) AS bookCount FROM books GROUP BY category ORDER BY category'
-    )
-    res.json({ categories: rows })
+    const rows = await Book.aggregate([
+      { $group: { _id: '$category', bookCount: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ])
+    res.json({ categories: rows.map((r) => ({ category: r._id, bookCount: r.bookCount })) })
   })
 )
 
@@ -39,45 +33,33 @@ router.get(
   optionalAuth,
   asyncHandler(async (req, res) => {
     const { q, category, level, sort = 'title', order = 'asc', page = 1, limit = 24 } = req.query
-    const where = []
-    const params = []
+    const filter = {}
 
     if (q) {
-      where.push('(b.title LIKE ? OR b.author LIKE ?)')
-      const like = `%${q}%`
-      params.push(like, like)
+      const regex = new RegExp(escapeRegExp(q), 'i')
+      filter.$or = [{ title: regex }, { author: regex }]
     }
-    if (category) {
-      where.push('b.category = ?')
-      params.push(category)
-    }
-    if (level) {
-      where.push('b.level = ?')
-      params.push(level)
-    }
+    if (category) filter.category = category
+    if (level) filter.level = level
 
-    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : ''
-    const sortWhitelist = ['title', 'author', 'rating', 'page_count', 'category']
+    const sortFields = ['title', 'author', 'rating', 'pageCount', 'page_count', 'category']
     const orderWhitelist = ['asc', 'desc']
-    const sortCol = sortWhitelist.includes(sort) ? sort : 'title'
+    const sortField = sortFields.includes(sort) ? (sort === 'page_count' ? 'pageCount' : sort) : 'title'
     const sortDir = orderWhitelist.includes(order) ? order : 'asc'
+    const sortObject = { [sortField]: sortDir === 'desc' ? -1 : 1 }
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1)
     const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 24))
 
-    const [[{ total }]] = await pool.query(
-      `SELECT COUNT(*) AS total FROM books b ${whereSql}`,
-      params
-    )
-    const [rows] = await pool.query(
-      `${BOOK_SELECT} ${whereSql}
-       ORDER BY b.${sortCol} ${sortDir}
-       LIMIT ? OFFSET ?`,
-      [...params, limitNum, (pageNum - 1) * limitNum]
-    )
+    const total = await Book.countDocuments(filter)
+    const books = await Book.find(filter)
+      .sort(sortObject)
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .lean()
 
     res.json({
-      books: rows.map(mapBook),
+      books: books.map(mapBook),
       total,
       page: pageNum,
       pages: Math.ceil(total / limitNum),
@@ -89,29 +71,31 @@ router.get(
   '/:id',
   optionalAuth,
   asyncHandler(async (req, res) => {
-    const bookId = Number(req.params.id)
-    if (!Number.isInteger(bookId) || bookId <= 0) throw new ApiError(400, 'Invalid book id.')
+    if (!mongoose.isValidObjectId(req.params.id)) throw new ApiError(400, 'Invalid book id.')
+    const bookId = req.params.id
 
-    const [[book]] = await pool.query(`${BOOK_SELECT} WHERE b.id = ?`, [bookId])
+    const book = await Book.findById(bookId).lean()
     if (!book) throw new ApiError(404, 'Book not found.')
 
     if (req.userId) {
-      await pool.query(
-        'INSERT INTO reading_history (user_id, book_id, action) VALUES (?, ?, ?)',
-        [req.userId, bookId, 'viewed']
-      )
+      await ReadingHistory.create({ user: req.userId, book: book._id, action: 'viewed' })
     }
 
     let progress = null
     if (req.userId) {
-      const [rows] = await pool.query(
-        `SELECT current_page AS currentPage, page_count AS pageCount, status,
-                reading_time_minutes AS readingTimeMinutes, last_position AS lastPosition,
-                last_read_at AS lastReadAt, started_at AS startedAt, completed_at AS completedAt
-         FROM reading_progress WHERE user_id = ? AND book_id = ?`,
-        [req.userId, bookId]
-      )
-      progress = rows[0] || null
+      const doc = await ReadingProgress.findOne({ user: req.userId, book: book._id }).lean()
+      if (doc) {
+        progress = {
+          currentPage: doc.currentPage,
+          pageCount: book.pageCount,
+          status: doc.status,
+          readingTimeMinutes: doc.readingTimeMinutes,
+          lastPosition: doc.lastPosition,
+          lastReadAt: doc.lastReadAt,
+          startedAt: doc.startedAt,
+          completedAt: doc.completedAt,
+        }
+      }
     }
 
     res.json({ book: mapBook(book), progress })
@@ -129,12 +113,16 @@ router.post(
   validate,
   asyncHandler(async (req, res) => {
     const { title, author, category, description, pageCount, isbn, rating } = req.body
-    const [result] = await pool.query(
-      `INSERT INTO books (title, author, cover, description, category, page_count, isbn, rating, language, level)
-       VALUES (?, ?, NULL, ?, ?, ?, ?, ?, 'English', ?)`,
-      [title, author, description || null, category || null, pageCount, isbn || null, rating || null, req.body.level || 'Beginner']
-    )
-    const [[book]] = await pool.query(`${BOOK_SELECT} WHERE b.id = ?`, [result.insertId])
+    const book = await Book.create({
+      title,
+      author,
+      description: description || null,
+      category: category || null,
+      pageCount,
+      isbn: isbn || null,
+      rating: rating || null,
+      level: req.body.level || 'Beginner',
+    })
     res.status(201).json({ book: mapBook(book) })
   })
 )
