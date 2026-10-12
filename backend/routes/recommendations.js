@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import pool from '../config/db.js'
 import { protect } from '../middleware/auth.js'
-import { asyncHandler } from '../utils/helpers.js'
+import { asyncHandler, parseInterests } from '../utils/helpers.js'
 
 const router = Router()
 router.use(protect)
@@ -13,7 +13,7 @@ router.get(
       'SELECT name, surname, interests FROM users WHERE id = ?',
       [req.userId]
     )
-    const interests = user?.interests ? JSON.parse(user.interests) : []
+    const interests = parseInterests(user?.interests)
 
     const [favoriteRows] = await pool.query(
       `SELECT b.category FROM favorites fv JOIN books b ON b.id = fv.book_id WHERE fv.user_id = ?`,

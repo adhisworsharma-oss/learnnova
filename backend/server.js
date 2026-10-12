@@ -11,6 +11,7 @@ import bookmarkRoutes from './routes/bookmarks.js'
 import favoriteRoutes from './routes/favorites.js'
 import recommendationRoutes from './routes/recommendations.js'
 import dashboardRoutes from './routes/dashboard.js'
+import chatRoutes from './routes/chat.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
@@ -44,6 +45,15 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter)
 app.use('/api/auth/register', authLimiter)
 
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'You are chatting too fast. Give Nova a moment.' },
+})
+app.use('/api/chat', chatLimiter)
+
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'learnova-api' }))
 
 app.use('/api/auth', authRoutes)
@@ -53,6 +63,7 @@ app.use('/api/bookmarks', bookmarkRoutes)
 app.use('/api/favorites', favoriteRoutes)
 app.use('/api/recommendations', recommendationRoutes)
 app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/chat', chatRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

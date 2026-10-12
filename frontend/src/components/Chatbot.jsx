@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { api } from '../api.js'
 
 const BOT_RESPONSES = {
   greeting: "Hey! I'm Nova, your reading assistant. Ask me anything about books, study tips, or what to read next.",
@@ -8,6 +9,7 @@ const BOT_RESPONSES = {
   progress: "To track your reading, just open a book and click 'Start Reading'. You can update your page number whenever you take a break.",
   help: "I can help with:\n• Book recommendations\n• Study tips\n• How to use Learnova\n• Understanding your reading stats",
   default: "Hmm, I'm not sure about that one. But I can help with book recommendations, study tips, or navigating the app. What sounds good?",
+  offline: "I can't reach my brain right now (connection issue), so here's the quick version: I can recommend books, share study tips, or explain how Learnova works.",
 }
 
 function getBotReply(msg) {
@@ -19,6 +21,14 @@ function getBotReply(msg) {
   if (lower.match(/\b(progress|track|page|update|start)\b/)) return BOT_RESPONSES.progress
   if (lower.match(/\b(help|what can|how)\b/)) return BOT_RESPONSES.help
   return BOT_RESPONSES.default
+}
+
+async function askNova(history) {
+  const { reply } = await api('/chat', {
+    method: 'POST',
+    body: { messages: history.map(({ from, text }) => ({ from, text })) },
+  })
+  return reply
 }
 
 export default function Chatbot() {
@@ -39,20 +49,29 @@ export default function Chatbot() {
     if (open) inputRef.current?.focus()
   }, [open])
 
-  function send(text) {
+  async function send(text) {
     const msg = text || input.trim()
     if (!msg) return
 
     const userMsg = { from: 'user', text: msg, time: new Date() }
-    setMessages(prev => [...prev, userMsg])
+    const history = [...messages, userMsg]
+    setMessages(history)
     setInput('')
     setTyping(true)
 
-    setTimeout(() => {
-      const reply = getBotReply(msg)
+    try {
+      const reply = await askNova(history)
       setMessages(prev => [...prev, { from: 'bot', text: reply, time: new Date() }])
+    } catch (err) {
+      console.warn('Nova unavailable, using local replies:', err.message)
+      setMessages(prev => [
+        ...prev,
+        { from: 'bot', text: BOT_RESPONSES.offline, time: new Date() },
+        { from: 'bot', text: getBotReply(msg), time: new Date() },
+      ])
+    } finally {
       setTyping(false)
-    }, 600 + Math.random() * 800)
+    }
   }
 
   function handleKey(e) {
