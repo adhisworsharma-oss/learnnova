@@ -2,7 +2,7 @@ import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { body, validationResult } from 'express-validator'
-import pool from '../config/db.js'
+import User from '../models/User.js'
 import { protect } from '../middleware/auth.js'
 import { asyncHandler, ApiError, generateMembershipId, normalizeUser } from '../utils/helpers.js'
 
@@ -10,7 +10,7 @@ const router = Router()
 
 function signToken(user) {
   return jwt.sign(
-    { sub: user.id, mid: user.membership_id },
+    { sub: String(user._id), mid: user.membershipId },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   )
@@ -37,26 +37,29 @@ router.post(
   validate,
   asyncHandler(async (req, res) => {
     const { name, surname, email, password, dob } = req.body
-    let interests = req.body.interests
-    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email])
-    if (existing.length > 0) throw new ApiError(409, 'An account with this email already exists.')
+    const interests = Array.isArray(req.body.interests) ? [...new Set(req.body.interests)] : []
+
+    const existing = await User.exists({ email })
+    if (existing) throw new ApiError(409, 'An account with this email already exists.')
 
     const hash = await bcrypt.hash(password, 12)
     let membershipId = generateMembershipId()
     for (let i = 0; i < 5; i += 1) {
-      const [taken] = await pool.query('SELECT id FROM users WHERE membership_id = ?', [membershipId])
-      if (taken.length === 0) break
+      const taken = await User.exists({ membershipId })
+      if (!taken) break
       membershipId = generateMembershipId()
     }
-    const serializedInterests = Array.isArray(interests) ? JSON.stringify(interests) : '[]'
 
-    const [result] = await pool.query(
-      `INSERT INTO users (name, surname, email, password_hash, membership_id, dob, interests)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, surname, email, hash, membershipId, dob || null, serializedInterests]
-    )
+    const user = await User.create({
+      name,
+      surname,
+      email,
+      passwordHash: hash,
+      membershipId,
+      dob: dob || null,
+      interests,
+    })
 
-    const [[user]] = await pool.query('SELECT * FROM users WHERE id = ?', [result.insertId])
     res.status(201).json({ token: signToken(user), user: normalizeUser(user) })
   })
 )
@@ -70,13 +73,11 @@ router.post(
   validate,
   asyncHandler(async (req, res) => {
     const { identifier, password } = req.body
-    const [rows] = await pool.query(
-      'SELECT * FROM users WHERE email = ? OR membership_id = ? LIMIT 1',
-      [identifier, identifier]
-    )
-    const user = rows[0]
+    const user = await User.findOne({
+      $or: [{ email: { $in: [identifier, identifier.toLowerCase()] } }, { membershipId: identifier }],
+    })
     if (!user) throw new ApiError(401, 'Invalid credentials.')
-    const ok = await bcrypt.compare(password, user.password_hash)
+    const ok = await bcrypt.compare(password, user.passwordHash)
     if (!ok) throw new ApiError(401, 'Invalid credentials.')
 
     res.json({ token: signToken(user), user: normalizeUser(user) })
@@ -87,7 +88,7 @@ router.get(
   '/me',
   protect,
   asyncHandler(async (req, res) => {
-    const [[user]] = await pool.query('SELECT * FROM users WHERE id = ?', [req.userId])
+    const user = await User.findById(req.userId)
     if (!user) throw new ApiError(404, 'User not found.')
     res.json({ user: normalizeUser(user) })
   })
@@ -111,24 +112,20 @@ router.put(
   ],
   validate,
   asyncHandler(async (req, res) => {
-    const sets = []
-    const values = []
     const { name, surname, dob, profilePicture, interests } = req.body
+    const update = {}
 
-    if (name !== undefined) { sets.push('name = ?'); values.push(name) }
-    if (surname !== undefined) { sets.push('surname = ?'); values.push(surname) }
-    if (dob !== undefined) { sets.push('dob = ?'); values.push(dob || null) }
-    if (profilePicture !== undefined) { sets.push('profile_picture = ?'); values.push(profilePicture || null) }
+    if (name !== undefined) update.name = name
+    if (surname !== undefined) update.surname = surname
+    if (dob !== undefined) update.dob = dob || null
+    if (profilePicture !== undefined) update.profilePicture = profilePicture || null
     if (interests !== undefined) {
-      const clean = [...new Set(interests)].filter((i) => INTEREST_WHITELIST.includes(i))
-      sets.push('interests = ?'); values.push(JSON.stringify(clean))
+      update.interests = [...new Set(interests)].filter((i) => INTEREST_WHITELIST.includes(i))
     }
-    if (sets.length === 0) throw new ApiError(422, 'Nothing to update.')
+    if (Object.keys(update).length === 0) throw new ApiError(422, 'Nothing to update.')
 
-    values.push(req.userId)
-    await pool.query(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, values)
-
-    const [[user]] = await pool.query('SELECT * FROM users WHERE id = ?', [req.userId])
+    const user = await User.findByIdAndUpdate(req.userId, update, { new: true, runValidators: true })
+    if (!user) throw new ApiError(404, 'User not found.')
     res.json({ user: normalizeUser(user) })
   })
 )
@@ -142,12 +139,14 @@ router.put(
   ],
   validate,
   asyncHandler(async (req, res) => {
-    const [[user]] = await pool.query('SELECT * FROM users WHERE id = ?', [req.userId])
-    const ok = await bcrypt.compare(req.body.currentPassword, user.password_hash)
+    const user = await User.findById(req.userId)
+    if (!user) throw new ApiError(404, 'User not found.')
+    const ok = await bcrypt.compare(req.body.currentPassword, user.passwordHash)
     if (!ok) throw new ApiError(401, 'Current password is incorrect.')
 
     const hash = await bcrypt.hash(req.body.newPassword, 12)
-    await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.userId])
+    user.passwordHash = hash
+    await user.save()
     res.json({ message: 'Password updated.' })
   })
 )

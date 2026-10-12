@@ -29,7 +29,7 @@ LEARNOVA is a full-stack web application designed for college students to discov
 |-------|-----------|---------------|
 | Frontend | React 19 + Vite 8 | Fast development, hot reload, modern tooling |
 | Backend | Node.js + Express 4 | Lightweight, fast I/O, large ecosystem |
-| Database | MySQL 8.0 | ACID compliance, JSON support, proven reliability |
+| Database | MongoDB 7 (Mongoose ODM) | Flexible document model, native JSON, powerful aggregation |
 | Authentication | JWT (JSON Web Tokens) | Stateless, scalable, industry standard |
 | Containerization | Docker Compose | Consistent environments, one-command deployment |
 | Web Server | Nginx | High-performance static file serving, reverse proxy |
@@ -43,8 +43,8 @@ LEARNOVA is a full-stack web application designed for college students to discov
 └─────────────┘     └─────────────┘     └──────┬──────┘
                                                │
                                         ┌──────▼──────┐
-                                        │   MySQL 8   │
-                                        │  (Port 3306)│
+                                        │   MongoDB   │
+                                        │ (Port 27017)│
                                         └─────────────┘
 ```
 
@@ -53,7 +53,7 @@ LEARNOVA is a full-stack web application designed for college students to discov
 | Requirement | Minimum | Recommended |
 |------------|---------|-------------|
 | Node.js | 18.11+ | 20 LTS |
-| MySQL | 8.0 | 8.0+ |
+| MongoDB | 6.0+ | 7.0 |
 | RAM | 2 GB | 4 GB |
 | Disk Space | 500 MB | 1 GB |
 | Docker | 20.10+ | 24.0+ |
@@ -62,10 +62,10 @@ LEARNOVA is a full-stack web application designed for college students to discov
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| MySQL connection failures | High | Retry logic with 30 attempts, health checks |
+| MongoDB connection failures | High | Retry logic with 30 attempts, health checks |
 | JWT token expiration | Medium | 7-day expiry, client-side redirect on 401 |
 | Rate limiting abuse | Low | 500 req/15min general, 30 req/15min auth |
-| Database seed failure | Medium | INSERT IGNORE for idempotent seeding |
+| Database seed failure | Medium | Idempotent upsert seeding (npm run db:init) |
 
 ### 3.5 Verdict: TECHNICALLY FEASIBLE
 
@@ -244,7 +244,7 @@ No legal barriers. All open-source components have permissive licenses. Security
 | MySQL crashes | Docker auto-restart, data persisted in volume |
 | Backend crashes | Docker auto-restart, health check monitoring |
 | High traffic | Scale backend containers horizontally |
-| Data loss | MySQL volume backup, schema-seed.sql for recovery |
+| Data loss | MongoDB volume backup, npm run db:init for re-seeding |
 
 ---
 

@@ -1,26 +1,37 @@
 import { Router } from 'express'
 import { param } from 'express-validator'
-import pool from '../config/db.js'
+import Book from '../models/Book.js'
+import Bookmark from '../models/Bookmark.js'
+import ReadingHistory from '../models/ReadingHistory.js'
 import { protect } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../utils/helpers.js'
 
 const router = Router()
 router.use(protect)
 
-const validateBookId = [param('bookId').isInt({ min: 1 }).withMessage('Invalid book id.')]
+const validateBookId = [param('bookId').isMongoId().withMessage('Invalid book id.')]
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const [rows] = await pool.query(
-      `SELECT b.id AS bookId, b.title, b.author, b.cover, b.category, b.page_count AS pageCount,
-              bm.created_at AS bookmarkedAt
-       FROM bookmarks bm JOIN books b ON b.id = bm.book_id
-       WHERE bm.user_id = ?
-       ORDER BY bm.created_at DESC`,
-      [req.userId]
-    )
-    res.json({ books: rows })
+    const rows = await Bookmark.find({ user: req.userId })
+      .sort({ createdAt: -1 })
+      .populate('book')
+      .lean()
+
+    res.json({
+      books: rows
+        .filter((r) => r.book)
+        .map((r) => ({
+          bookId: String(r.book._id),
+          title: r.book.title,
+          author: r.book.author,
+          cover: r.book.cover,
+          category: r.book.category,
+          pageCount: r.book.pageCount,
+          bookmarkedAt: r.createdAt,
+        })),
+    })
   })
 )
 
@@ -28,19 +39,17 @@ router.post(
   '/:bookId',
   validateBookId,
   asyncHandler(async (req, res) => {
-    const bookId = Number(req.params.bookId)
-    const [[book]] = await pool.query('SELECT id FROM books WHERE id = ?', [bookId])
+    const bookId = req.params.bookId
+    const book = await Book.findById(bookId)
     if (!book) throw new ApiError(404, 'Book not found.')
 
-    await pool.query(
-      'INSERT IGNORE INTO bookmarks (user_id, book_id) VALUES (?, ?)',
-      [req.userId, bookId]
+    await Bookmark.updateOne(
+      { user: req.userId, book: book._id },
+      { $setOnInsert: { user: req.userId, book: book._id } },
+      { upsert: true }
     )
-    await pool.query(
-      'INSERT INTO reading_history (user_id, book_id, action) VALUES (?, ?, ?)',
-      [req.userId, bookId, 'bookmarked']
-    )
-    res.status(201).json({ bookId, bookmarked: true })
+    await ReadingHistory.create({ user: req.userId, book: book._id, action: 'bookmarked' })
+    res.status(201).json({ bookId: String(book._id), bookmarked: true })
   })
 )
 
@@ -48,8 +57,8 @@ router.delete(
   '/:bookId',
   validateBookId,
   asyncHandler(async (req, res) => {
-    const bookId = Number(req.params.bookId)
-    await pool.query('DELETE FROM bookmarks WHERE user_id = ? AND book_id = ?', [req.userId, bookId])
+    const bookId = req.params.bookId
+    await Bookmark.deleteOne({ user: req.userId, book: bookId })
     res.json({ bookId, bookmarked: false })
   })
 )

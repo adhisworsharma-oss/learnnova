@@ -10,12 +10,16 @@ export function errorHandler(err, _req, res, _next) {
     return res.status(err.status).json({ message: err.message, details: err.details })
   }
 
-  if (err.code === 'ER_DUP_ENTRY') {
+  if (err.code === 11000) {
     return res.status(409).json({ message: 'That record already exists for this account.' })
   }
 
-  if (err.code === 'ER_NO_REFERENCED_ROW_2' || err.code === 'ER_NO_REFERENCED_ROW') {
-    return res.status(404).json({ message: 'The requested item does not exist.' })
+  if (err.name === 'ValidationError') {
+    return res.status(422).json({ message: 'Please check your input.' })
+  }
+
+  if (err.name === 'CastError') {
+    return res.status(400).json({ message: 'Invalid id format.' })
   }
 
   console.error(err)

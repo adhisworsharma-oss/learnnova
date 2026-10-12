@@ -9,6 +9,7 @@ export function generateMembershipId() {
   return `LRN-${year}-${code}`
 }
 
+<<<<<<< HEAD
 // MySQL JSON columns come back from mysql2 as already-parsed values, but seed
 // scripts and older rows can still hold strings. Handle both.
 export function parseInterests(value) {
@@ -24,21 +25,56 @@ export function parseInterests(value) {
     }
   }
   return []
+=======
+function toDateOnly(value) {
+  if (!value) return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
+>>>>>>> f69a80be1e181a3972feda1d423b935c8d2c3546
 }
 
-export function normalizeUser(row) {
-  if (!row) return null
+function plain(doc) {
+  if (!doc) return null
+  return typeof doc.toObject === 'function' ? doc.toObject() : doc
+}
+
+export function normalizeUser(doc) {
+  const user = plain(doc)
+  if (!user) return null
   return {
-    id: row.id,
-    name: row.name,
-    surname: row.surname,
-    email: row.email,
-    membershipId: row.membership_id,
-    dob: row.dob ? new Date(row.dob).toISOString().slice(0, 10) : null,
-    profilePicture: row.profile_picture ?? null,
-    interests: parseInterests(row.interests),
-    createdAt: row.created_at,
+    id: String(user._id),
+    name: user.name,
+    surname: user.surname,
+    email: user.email,
+    membershipId: user.membershipId,
+    dob: toDateOnly(user.dob),
+    profilePicture: user.profilePicture ?? null,
+    interests: Array.isArray(user.interests) ? user.interests : [],
+    createdAt: user.createdAt,
   }
+}
+
+export function mapBook(doc) {
+  const book = plain(doc)
+  if (!book) return null
+  return {
+    id: String(book._id),
+    title: book.title,
+    author: book.author,
+    cover: book.cover ?? null,
+    description: book.description ?? null,
+    category: book.category ?? null,
+    pageCount: book.pageCount,
+    isbn: book.isbn ?? null,
+    rating: book.rating ?? null,
+    language: book.language,
+    level: book.level ?? null,
+    addedAt: book.addedAt,
+  }
+}
+
+export function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 export function asyncHandler(fn) {
