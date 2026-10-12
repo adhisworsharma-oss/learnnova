@@ -6,7 +6,11 @@ import Favorite from '../models/Favorite.js'
 import ReadingProgress from '../models/ReadingProgress.js'
 import ReadingHistory from '../models/ReadingHistory.js'
 import { protect } from '../middleware/auth.js'
+<<<<<<< HEAD
+import { asyncHandler, parseInterests } from '../utils/helpers.js'
+=======
 import { asyncHandler, ApiError } from '../utils/helpers.js'
+>>>>>>> f69a80be1e181a3972feda1d423b935c8d2c3546
 
 const router = Router()
 router.use(protect)
@@ -14,9 +18,17 @@ router.use(protect)
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+<<<<<<< HEAD
+    const [[user]] = await pool.query(
+      'SELECT name, surname, interests FROM users WHERE id = ?',
+      [req.userId]
+    )
+    const interests = parseInterests(user?.interests)
+=======
     const user = await User.findById(req.userId).lean()
     if (!user) throw new ApiError(404, 'User not found.')
     const interests = Array.isArray(user.interests) ? user.interests : []
+>>>>>>> f69a80be1e181a3972feda1d423b935c8d2c3546
 
     const [favoriteRows, progressRows, historyRows] = await Promise.all([
       Favorite.find({ user: req.userId }).populate('book').lean(),

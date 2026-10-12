@@ -42,6 +42,8 @@ services:
       DB_NAME: learnova
       JWT_SECRET: docker-dev-secret-change-in-production
       JWT_EXPIRES_IN: 7d
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
     depends_on:
       db:
         condition: service_healthy

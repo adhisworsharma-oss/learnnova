@@ -9,10 +9,28 @@ export function generateMembershipId() {
   return `LRN-${year}-${code}`
 }
 
+<<<<<<< HEAD
+// MySQL JSON columns come back from mysql2 as already-parsed values, but seed
+// scripts and older rows can still hold strings. Handle both.
+export function parseInterests(value) {
+  if (value == null) return []
+  if (Array.isArray(value)) return value
+  if (typeof value === 'object') return value.interests ?? []
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  return []
+=======
 function toDateOnly(value) {
   if (!value) return null
   const d = new Date(value)
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
+>>>>>>> f69a80be1e181a3972feda1d423b935c8d2c3546
 }
 
 function plain(doc) {

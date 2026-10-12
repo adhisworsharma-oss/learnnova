@@ -1,0 +1,10 @@
+{
+  "name": "learnova",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Learnova e-library platform - root tooling",
+  "type": "module",
+  "scripts": {
+    "setup": "node scripts/setup-env.mjs"
+  }
+}
