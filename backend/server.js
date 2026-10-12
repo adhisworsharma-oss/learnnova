@@ -11,11 +11,8 @@ import bookmarkRoutes from './routes/bookmarks.js'
 import favoriteRoutes from './routes/favorites.js'
 import recommendationRoutes from './routes/recommendations.js'
 import dashboardRoutes from './routes/dashboard.js'
-<<<<<<< HEAD
 import profileRoutes from './routes/profile.js'
-=======
 import chatRoutes from './routes/chat.js'
->>>>>>> 3b908bfcb77f0bb7103724b8d3425c486a68a1ac
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
@@ -67,11 +64,8 @@ app.use('/api/bookmarks', bookmarkRoutes)
 app.use('/api/favorites', favoriteRoutes)
 app.use('/api/recommendations', recommendationRoutes)
 app.use('/api/dashboard', dashboardRoutes)
-<<<<<<< HEAD
 app.use('/api/profile', profileRoutes)
-=======
 app.use('/api/chat', chatRoutes)
->>>>>>> 3b908bfcb77f0bb7103724b8d3425c486a68a1ac
 
 app.use(notFound)
 app.use(errorHandler)

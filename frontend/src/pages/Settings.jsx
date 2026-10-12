@@ -110,15 +110,6 @@ export default function Settings() {
           </div>
           <div className="settings-row">
             <div className="settings-row-info">
-              <h3>Due Date Reminders</h3>
-              <p>Remind you before reading goals are due</p>
-            </div>
-            <button className={`toggle-switch ${notifications.dueReminders ? 'toggle-switch--on' : ''}`} onClick={() => toggleNotif('dueReminders')}>
-              <span className="toggle-knob" />
-            </button>
-          </div>
-          <div className="settings-row">
-            <div className="settings-row-info">
               <h3>Book Recommendations</h3>
               <p>Personalized suggestions based on your reading</p>
             </div>
@@ -156,15 +147,6 @@ export default function Settings() {
               <p>Email when there's activity in your groups</p>
             </div>
             <button className={`toggle-switch ${emailNotif.groupActivity ? 'toggle-switch--on' : ''}`} onClick={() => toggleEmail('groupActivity')}>
-              <span className="toggle-knob" />
-            </button>
-          </div>
-          <div className="settings-row">
-            <div className="settings-row-info">
-              <h3>Due Dates</h3>
-              <p>Email reminders for reading deadlines</p>
-            </div>
-            <button className={`toggle-switch ${emailNotif.dueDates ? 'toggle-switch--on' : ''}`} onClick={() => toggleEmail('dueDates')}>
               <span className="toggle-knob" />
             </button>
           </div>

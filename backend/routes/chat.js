@@ -1,5 +1,6 @@
 import { Router } from 'express'
-import pool from '../config/db.js'
+import User from '../models/User.js'
+import ReadingProgress from '../models/ReadingProgress.js'
 import { protect } from '../middleware/auth.js'
 import { asyncHandler, ApiError, parseInterests } from '../utils/helpers.js'
 
@@ -13,6 +14,7 @@ const MODEL_FALLBACKS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
 const MODELS = [...new Set([MODEL, ...MODEL_FALLBACKS])]
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
+const PLACEHOLDER_KEYS = new Set(['', 'your_gemini_api_key_here'])
 const MAX_TURNS = 20
 const MAX_MESSAGE_CHARS = 2000
 const REQUEST_TIMEOUT_MS = 25000
@@ -36,33 +38,28 @@ function cleanHistory(messages) {
 }
 
 async function loadUserContext(userId) {
-  const [[user]] = await pool.query(
-    'SELECT name, interests FROM users WHERE id = ?',
-    [userId]
-  )
+  const user = await User.findById(userId).lean()
   if (!user) return ''
 
-  const [current] = await pool.query(
-    `SELECT b.title, b.author, rp.current_page AS currentPage, b.page_count AS pageCount
-     FROM reading_progress rp JOIN books b ON b.id = rp.book_id
-     WHERE rp.user_id = ? AND rp.status = 'reading'
-     ORDER BY rp.last_read_at DESC LIMIT 3`,
-    [userId]
-  )
-  const [[stats]] = await pool.query(
-    `SELECT COUNT(*) AS completed FROM reading_progress WHERE user_id = ? AND status = 'completed'`,
-    [userId]
-  )
+  const [current, completed] = await Promise.all([
+    ReadingProgress.find({ user: userId, status: 'reading' })
+      .sort({ lastReadAt: -1 })
+      .limit(3)
+      .populate('book', 'title author pageCount')
+      .lean(),
+    ReadingProgress.countDocuments({ user: userId, status: 'completed' }),
+  ])
 
   const interests = parseInterests(user.interests)
 
   const lines = [`Member: ${user.name}.`]
   if (interests.length) lines.push(`Stated interests: ${interests.join(', ')}.`)
-  if (stats?.completed) lines.push(`Books completed so far: ${stats.completed}.`)
-  if (current.length) {
+  if (completed) lines.push(`Books completed so far: ${completed}.`)
+  const reading = current.filter((row) => row.book)
+  if (reading.length) {
     lines.push(
-      `Currently reading: ${current
-        .map((b) => `"${b.title}" by ${b.author} (page ${b.currentPage}/${b.pageCount})`)
+      `Currently reading: ${reading
+        .map((row) => `"${row.book.title}" by ${row.book.author} (page ${row.currentPage}/${row.book.pageCount})`)
         .join('; ')}.`
     )
   }
@@ -118,7 +115,7 @@ router.post(
   '/',
   protect,
   asyncHandler(async (req, res) => {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY || PLACEHOLDER_KEYS.has(process.env.GEMINI_API_KEY.trim())) {
       throw new ApiError(503, 'Nova is not configured on this server.')
     }
 

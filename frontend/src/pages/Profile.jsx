@@ -195,20 +195,6 @@ function formatNumber(n) {
   return new Intl.NumberFormat('en-US').format(n || 0)
 }
 
-const HISTORY_LABELS = {
-  opened: 'Opened',
-  completed: 'Finished',
-  bookmarked: 'Saved',
-  favorited: 'Favorited',
-}
-
-const HISTORY_ICONS = {
-  opened: 'bookOpen',
-  completed: 'checkCircle',
-  bookmarked: 'bookmark',
-  favorited: 'heart',
-}
-
 /* ------------------------------------------------------------------ *
    Reusable pieces
  * ------------------------------------------------------------------ */
@@ -1018,22 +1004,6 @@ export default function Profile() {
     }
   }, [stats, reading, completed, bookmarks, favorites, history])
 
-  const achievements = useMemo(() => {
-    const list = [
-      { id: 'first', icon: 'sparkles', title: 'First Steps', desc: 'Start your first book', unlocked: derived.borrowed >= 1 },
-      { id: 'pages', icon: 'activity', title: 'Page Turner', desc: 'Read 100 pages', unlocked: derived.pagesRead >= 100 },
-      { id: 'bookworm', icon: 'book', title: 'Bookworm', desc: 'Finish 5 books', unlocked: derived.completedCount >= 5 },
-      { id: 'scholar', icon: 'cap', title: 'Scholar', desc: 'Finish 10 books', unlocked: derived.completedCount >= 10 },
-      { id: 'collector', icon: 'bookmark', title: 'Collector', desc: 'Save 5 bookmarks', unlocked: derived.wishlist >= 5 },
-      { id: 'curator', icon: 'heart', title: 'Curator', desc: 'Favorite 5 books', unlocked: derived.favorites >= 5 },
-      { id: 'streak', icon: 'trending', title: 'Consistent', desc: '3-day reading streak', unlocked: derived.readingStreak >= 3 },
-      { id: 'marathon', icon: 'clock', title: 'Marathon', desc: 'Read for 10 hours', unlocked: derived.readingMinutes >= 600 },
-    ]
-    return list
-  }, [derived])
-
-  const unlockedCount = achievements.filter((a) => a.unlocked).length
-
   const notifications = useMemo(() => {
     const items = []
     if (derived.readingStreak >= 2) {
@@ -1048,11 +1018,8 @@ export default function Profile() {
     if (reading.length > 0) {
       items.push({ id: 'reading', icon: 'bookOpen', tone: 'info', text: `You have ${reading.length} book${reading.length === 1 ? '' : 's'} in progress.` })
     }
-    items.push({ id: 'fines', icon: 'rupee', tone: 'success', text: 'No pending dues on your account.' })
     return items.slice(0, 6)
   }, [derived, completed, reading])
-
-  const recentActivity = useMemo(() => history.slice(0, 6), [history])
 
   /* ---------- render states ---------- */
 
@@ -1132,21 +1099,12 @@ export default function Profile() {
   ]
 
   const kpis = [
-    { key: 'borrowed', icon: 'layers', label: 'Books Borrowed', value: derived.borrowed, tone: 'navy' },
-    { key: 'issued', icon: 'bookOpen', label: 'Currently Issued', value: derived.issued, tone: 'blue' },
-    { key: 'returned', icon: 'checkCircle', label: 'Books Returned', value: derived.returned, tone: 'green' },
     { key: 'wishlist', icon: 'bookmark', label: 'Wishlist', value: derived.wishlist, tone: 'amber' },
-    { key: 'favorites', icon: 'heart', label: 'Favorites', value: derived.favorites, tone: 'rose' },
-    { key: 'history', icon: 'clock', label: 'Reading History', value: derived.historyCount, tone: 'indigo' },
     { key: 'completed', icon: 'award', label: 'Completed Books', value: derived.completedCount, tone: 'teal' },
-    { key: 'fines', icon: 'rupee', label: 'Fines Due', value: `₹${derived.fines}`, tone: 'slate', hint: derived.fines === 0 ? 'All clear' : 'Payment due' },
   ]
 
   const quickActions = [
     { key: 'browse', icon: 'library', label: 'Browse Library', to: '/books' },
-    { key: 'continue', icon: 'bookOpen', label: 'Continue Reading', to: '/books' },
-    { key: 'borrowed', icon: 'layers', label: 'My Borrowed Books', tab: 'library' },
-    { key: 'favorites', icon: 'heart', label: 'Favorites', tab: 'library' },
     { key: 'downloads', icon: 'download', label: 'Downloaded Resources', tab: 'library' },
     { key: 'help', icon: 'message', label: 'Help & Support', href: 'mailto:support@learnova.app' },
   ]
@@ -1323,54 +1281,6 @@ export default function Profile() {
               <div className="pf-col">
                 <section className="pf-card">
                   <div className="pf-card-head">
-                    <h2 className="pf-card-title"><Icon name="activity" size={16} stroke={2} />Recent activity</h2>
-                    {history.length > 0 && <button type="button" className="pf-link-btn" onClick={() => setTab('library')}>View all</button>}
-                  </div>
-                  {recentActivity.length === 0 ? (
-                    <p className="pf-empty">Your reading activity will appear here.</p>
-                  ) : (
-                    <ul className="pf-activity-list">
-                      {recentActivity.map((item) => (
-                        <li key={item.id} className="pf-activity-item">
-                          <span className={`pf-activity-dot pf-activity-dot--${item.action}`}>
-                            <Icon name={HISTORY_ICONS[item.action] || 'book'} size={14} stroke={2} />
-                          </span>
-                          <div className="pf-activity-text">
-                            <span>
-                              <strong>{HISTORY_LABELS[item.action] || 'Viewed'}</strong> “{item.title}”
-                            </span>
-                            <span className="pf-activity-sub">{item.author}</span>
-                          </div>
-                          <span className="pf-activity-time">{timeAgo(item.viewedAt)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-
-                <section className="pf-card">
-                  <div className="pf-card-head">
-                    <h2 className="pf-card-title"><Icon name="award" size={16} stroke={2} />Achievements</h2>
-                    <span className="pf-card-count">{unlockedCount}/{achievements.length} unlocked</span>
-                  </div>
-                  <div className="pf-badge-grid">
-                    {achievements.map((a) => (
-                      <div key={a.id} className={`pf-badge-item ${a.unlocked ? 'pf-badge-item--on' : ''}`}>
-                        <span className="pf-badge-medal"><Icon name={a.icon} size={17} stroke={2} /></span>
-                        <div className="pf-badge-text">
-                          <strong>{a.title}</strong>
-                          <span>{a.desc}</span>
-                        </div>
-                        {a.unlocked && <Icon name="check" size={15} stroke={2.4} className="pf-badge-check" />}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              </div>
-
-              <div className="pf-col">
-                <section className="pf-card">
-                  <div className="pf-card-head">
                     <h2 className="pf-card-title"><Icon name="cap" size={16} stroke={2} />Academic details</h2>
                     <button type="button" className="pf-link-btn" onClick={() => setEditOpen(true)}>
                       <Icon name="edit" size={14} stroke={2} />Edit
@@ -1391,7 +1301,9 @@ export default function Profile() {
                     ))}
                   </ul>
                 </section>
+              </div>
 
+              <div className="pf-col">
                 <section className="pf-card">
                   <div className="pf-card-head">
                     <h2 className="pf-card-title"><Icon name="bell" size={16} stroke={2} />Notifications</h2>
@@ -1416,72 +1328,6 @@ export default function Profile() {
 
         {tab === 'library' && isSelf && (
           <div className="pf-library">
-            <section className="pf-card">
-              <div className="pf-card-head">
-                <h2 className="pf-card-title"><Icon name="bookOpen" size={16} stroke={2} />Currently issued ({reading.length})</h2>
-                <Link className="pf-link-btn" to="/books">Continue reading</Link>
-              </div>
-              {reading.length === 0 ? (
-                <p className="pf-empty">No books in progress. Pick one from the library!</p>
-              ) : (
-                <ul className="pf-book-list">
-                  {reading.map((book) => (
-                    <BookRow
-                      key={book.bookId}
-                      book={book}
-                      badge={{ label: 'reading', className: 'pf-badge--reading' }}
-                      onDownload={toggleDownload}
-                      downloaded={isDownloaded(book.bookId)}
-                    />
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className="pf-card">
-              <div className="pf-card-head">
-                <h2 className="pf-card-title"><Icon name="checkCircle" size={16} stroke={2} />Returned &amp; completed ({completed.length})</h2>
-              </div>
-              {completed.length === 0 ? (
-                <p className="pf-empty">Books you finish will appear here.</p>
-              ) : (
-                <ul className="pf-book-list">
-                  {completed.map((book) => (
-                    <BookRow
-                      key={book.bookId}
-                      book={book}
-                      badge={{ label: 'completed', className: 'pf-badge--done' }}
-                      onDownload={toggleDownload}
-                      downloaded={isDownloaded(book.bookId)}
-                    />
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className="pf-card">
-              <div className="pf-card-head">
-                <h2 className="pf-card-title"><Icon name="clock" size={16} stroke={2} />Borrowing history ({history.length})</h2>
-              </div>
-              {history.length === 0 ? (
-                <p className="pf-empty">Your borrowing history will show up here.</p>
-              ) : (
-                <ul className="pf-history-list">
-                  {history.map((item) => (
-                    <li key={item.id} className="pf-history-row">
-                      <BookCover cover={item.cover} title={item.title} />
-                      <div className="pf-book-info">
-                        <span className="pf-book-title">{item.title}</span>
-                        <span className="pf-book-author">{item.author}{item.category ? ` · ${item.category}` : ''}</span>
-                      </div>
-                      <span className="pf-history-action">{HISTORY_LABELS[item.action] || 'Viewed'}</span>
-                      <span className="pf-history-time">{timeAgo(item.viewedAt)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
             <div className="pf-section-grid">
               <section className="pf-card">
                 <div className="pf-card-head">

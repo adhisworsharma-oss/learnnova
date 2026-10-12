@@ -9,9 +9,8 @@ export function generateMembershipId() {
   return `LRN-${year}-${code}`
 }
 
-<<<<<<< HEAD
-// MySQL JSON columns come back from mysql2 as already-parsed values, but seed
-// scripts and older rows can still hold strings. Handle both.
+// Interests are stored as an array on the User model, but legacy/seed data may
+// hold a JSON string. Normalize both to an array.
 export function parseInterests(value) {
   if (value == null) return []
   if (Array.isArray(value)) return value
@@ -25,12 +24,12 @@ export function parseInterests(value) {
     }
   }
   return []
-=======
+}
+
 function toDateOnly(value) {
   if (!value) return null
   const d = new Date(value)
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
->>>>>>> f69a80be1e181a3972feda1d423b935c8d2c3546
 }
 
 function plain(doc) {
