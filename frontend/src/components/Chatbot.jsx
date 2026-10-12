@@ -1,40 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
-import { api } from '../api.js'
+import { sendMessage } from '../api/endpoints/chat.js'
 
-const BOT_RESPONSES = {
-  greeting: "Hey! I'm Nova, your reading assistant. Ask me anything about books, study tips, or what to read next.",
-  recommendation: "Based on what's popular right now, I'd suggest checking out 'Atomic Habits' by James Clear — it's a quick read and super practical for building study routines.",
-  study_tip: "Try the Pomodoro technique: 25 minutes of focused reading, then a 5-minute break. After 4 rounds, take a longer break. Works wonders for retention.",
-  groups: "You can join study groups from the Groups page. They're great for accountability — reading with others keeps you on track.",
-  progress: "To track your reading, just open a book and click 'Start Reading'. You can update your page number whenever you take a break.",
-  help: "I can help with:\n• Book recommendations\n• Study tips\n• How to use Learnova\n• Understanding your reading stats",
-  default: "Hmm, I'm not sure about that one. But I can help with book recommendations, study tips, or navigating the app. What sounds good?",
-  offline: "I can't reach my brain right now (connection issue), so here's the quick version: I can recommend books, share study tips, or explain how Learnova works.",
-}
-
-function getBotReply(msg) {
-  const lower = msg.toLowerCase()
-  if (lower.match(/\b(hi|hello|hey|sup|yo)\b/)) return BOT_RESPONSES.greeting
-  if (lower.match(/\b(recommend|suggest|what should|book)\b/)) return BOT_RESPONSES.recommendation
-  if (lower.match(/\b(study|tip|focus|concentrate|remember|retain)\b/)) return BOT_RESPONSES.study_tip
-  if (lower.match(/\b(group|team|study group)\b/)) return BOT_RESPONSES.groups
-  if (lower.match(/\b(progress|track|page|update|start)\b/)) return BOT_RESPONSES.progress
-  if (lower.match(/\b(help|what can|how)\b/)) return BOT_RESPONSES.help
-  return BOT_RESPONSES.default
-}
+const GREETING = "Hey! I'm Nova, your reading assistant. Ask me anything about books, study tips, or what to read next."
 
 async function askNova(history) {
-  const { reply } = await api('/chat', {
-    method: 'POST',
-    body: { messages: history.map(({ from, text }) => ({ from, text })) },
-  })
+  const { reply } = await sendMessage(history.map(({ from, text }) => ({ from, text })))
   return reply
 }
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([
-    { from: 'bot', text: BOT_RESPONSES.greeting, time: new Date() },
+    { from: 'bot', text: GREETING, time: new Date() },
   ])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
@@ -63,12 +40,12 @@ export default function Chatbot() {
       const reply = await askNova(history)
       setMessages(prev => [...prev, { from: 'bot', text: reply, time: new Date() }])
     } catch (err) {
-      console.warn('Nova unavailable, using local replies:', err.message)
-      setMessages(prev => [
-        ...prev,
-        { from: 'bot', text: BOT_RESPONSES.offline, time: new Date() },
-        { from: 'bot', text: getBotReply(msg), time: new Date() },
-      ])
+      console.warn('Nova unavailable:', err.message)
+      const text =
+        err.status === 401
+          ? 'Your session expired. Please log in again to keep chatting with Nova.'
+          : err.message || 'Sorry, I couldn\'t reach Nova just now. Please try again.'
+      setMessages(prev => [...prev, { from: 'bot', text, time: new Date() }])
     } finally {
       setTyping(false)
     }
