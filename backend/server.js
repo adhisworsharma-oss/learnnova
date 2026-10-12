@@ -11,6 +11,7 @@ import bookmarkRoutes from './routes/bookmarks.js'
 import favoriteRoutes from './routes/favorites.js'
 import recommendationRoutes from './routes/recommendations.js'
 import dashboardRoutes from './routes/dashboard.js'
+import profileRoutes from './routes/profile.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
@@ -53,6 +54,7 @@ app.use('/api/bookmarks', bookmarkRoutes)
 app.use('/api/favorites', favoriteRoutes)
 app.use('/api/recommendations', recommendationRoutes)
 app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/profile', profileRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

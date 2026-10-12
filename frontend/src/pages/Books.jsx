@@ -3,28 +3,41 @@ import { api, getToken } from '../api.js'
 import './Books.css'
 
 /* ------------------------------------------------------------------
-   Library module — Learnova
-   Warm editorial-style digital library.
-   Data comes from GET /api/books (with graceful demo fallback),
-   favorites from /api/favorites and reading state from /api/reading.
+   BCA Digital Library — Learnova
+   A modern, course-aligned library for the Bachelor of Computer
+   Applications programme. Card-based layout, subject browsing and a
+   clean academic interface.
+
+   Data comes from GET /api/books (with a graceful demo catalogue
+   fallback), favorites from /api/favorites and reading state from
+   /api/reading.
 ------------------------------------------------------------------- */
 
 const COPY = {
-  title: 'Library',
-  subtitle: 'Explore, discover, and keep track of your collection.',
-  searchPlaceholder: 'Search by title, author, topic, or category...',
+  eyebrow: 'Learnova · BCA Programme',
+  title: 'BCA Digital Library',
+  subtitle:
+    'Course-aligned textbooks and references for the Bachelor of Computer Applications — browse by subject, author, or programming language.',
+  searchPlaceholder: 'Search BCA books, subjects, authors, or programming languages...',
 }
 
-const CATEGORIES = [
-  { id: 'all', label: 'All Categories' },
-  { id: 'Computer Science', label: 'Computer Science' },
-  { id: 'Data Science', label: 'Data Science' },
-  { id: 'Design', label: 'Design' },
-  { id: 'Business & Economics', label: 'Business & Economics' },
-  { id: 'Literature', label: 'Literature' },
-  { id: 'History', label: 'History' },
-  { id: 'Science', label: 'Science' },
-  { id: 'Self-Development', label: 'Self-Development' },
+/* Subjects that make up the BCA reading list. */
+const SUBJECTS = [
+  { id: 'all', label: 'All Subjects' },
+  { id: 'Java', label: 'Java' },
+  { id: 'C Programming', label: 'C Programming' },
+  { id: 'C++', label: 'C++' },
+  { id: 'Python', label: 'Python' },
+  { id: 'DBMS', label: 'DBMS' },
+  { id: 'Operating Systems', label: 'Operating Systems' },
+  { id: 'Computer Networks', label: 'Computer Networks' },
+  { id: 'Data Structures', label: 'Data Structures' },
+  { id: 'Software Engineering', label: 'Software Engineering' },
+  { id: 'Web Development', label: 'Web Development' },
+  { id: 'AI', label: 'AI' },
+  { id: 'Machine Learning', label: 'Machine Learning' },
+  { id: 'Cyber Security', label: 'Cyber Security' },
+  { id: 'Cloud Computing', label: 'Cloud Computing' },
 ]
 
 const COLLECTIONS = [
@@ -36,91 +49,108 @@ const COLLECTIONS = [
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest First' },
   { id: 'oldest', label: 'Oldest First' },
-  { id: 'title', label: 'A – Z' },
+  { id: 'title', label: 'Title A – Z' },
   { id: 'author', label: 'Author' },
   { id: 'rating', label: 'Top Rated' },
 ]
 
-const CATEGORY_COVERS = {
-  'Computer Science': { bg: '#4a5568', accent: '#a0aec0' },
-  'Data Science': { bg: '#2d3748', accent: '#63b3ed' },
-  'Design': { bg: '#553c9a', accent: '#d6bcfa' },
-  'Business & Economics': { bg: '#744210', accent: '#fbd38d' },
-  'Literature': { bg: '#22543d', accent: '#9ae6b4' },
-  'History': { bg: '#742a2a', accent: '#fc8181' },
-  'Science': { bg: '#1a365d', accent: '#90cdf4' },
-  'Self-Development': { bg: '#702459', accent: '#fbb6ce' },
-  'General': { bg: '#4a5568', accent: '#a0aec0' },
+/* Per-subject visual identity — used for cover fallbacks, chips and tags. */
+const SUBJECT_THEMES = {
+  Java: { a: '#f59e0b', b: '#ea580c', soft: '#fff4e6', ink: '#c2410c' },
+  'C Programming': { a: '#3b82f6', b: '#1e3a8a', soft: '#eaf1ff', ink: '#1d4ed8' },
+  'C++': { a: '#38bdf8', b: '#0c4a6e', soft: '#e6f6fe', ink: '#0369a1' },
+  Python: { a: '#facc15', b: '#2563eb', soft: '#eef3ff', ink: '#1d4ed8' },
+  DBMS: { a: '#14b8a6', b: '#0f766e', soft: '#e6faf7', ink: '#0f766e' },
+  'Operating Systems': { a: '#a855f7', b: '#6d28d9', soft: '#f5edff', ink: '#7c3aed' },
+  'Computer Networks': { a: '#06b6d4', b: '#0e7490', soft: '#e6f9fd', ink: '#0e7490' },
+  'Data Structures': { a: '#22c55e', b: '#15803d', soft: '#eafaf0', ink: '#15803d' },
+  'Software Engineering': { a: '#f59e0b', b: '#b45309', soft: '#fff6e8', ink: '#b45309' },
+  'Web Development': { a: '#ec4899', b: '#be185d', soft: '#fdeef5', ink: '#be185d' },
+  AI: { a: '#6366f1', b: '#4338ca', soft: '#eef0ff', ink: '#4338ca' },
+  'Machine Learning': { a: '#8b5cf6', b: '#5b21b6', soft: '#f4f0ff', ink: '#6d28d9' },
+  'Cyber Security': { a: '#ef4444', b: '#991b1b', soft: '#fdecec', ink: '#b91c1c' },
+  'Cloud Computing': { a: '#0ea5e9', b: '#0369a1', soft: '#e8f6fe', ink: '#0369a1' },
+  __default: { a: '#64748b', b: '#334155', soft: '#f1f5f9', ink: '#475569' },
 }
 
-function categoryCover(category) {
-  return CATEGORY_COVERS[category] || CATEGORY_COVERS['General']
+function subjectTheme(subject) {
+  return SUBJECT_THEMES[subject] || SUBJECT_THEMES.__default
 }
 
-const ISBN_MAP = {
-  'Clean Code': '9780132350884',
-  'Atomic Habits': '9780735211292',
-  'Sapiens': '9780062316110',
-  'Sapiens: A Brief History of Humankind': '9780062316110',
-  'Thinking, Fast and Slow': '9780374533557',
-  'The Design of Everyday Things': '9780465050659',
-  'Deep Learning': '9780262035613',
-  'Introduction to Algorithms': '9780262046305',
-  'Thinking in Systems': '9781603581486',
-  'The Lean Startup': '9780307887894',
-  'To Kill a Mockingbird': '9780061120084',
-  'Guns, Germs, and Steel': '9780393354324',
-  'Guns, Germs, and Steel: The Fates of Human Societies': '9780393354324',
-  'The Pragmatic Programmer': '9780135957059',
-  'Designing Data-Intensive Applications': '9781449373320',
-  'JavaScript: The Good Parts': '9780596517748',
-  'Structure and Interpretation of Computer Programs': '9780262510875',
-  'The Art of Computer Programming, Vol 1': '9780201896831',
-  'Python for Data Analysis': '9781098104030',
-  'The Elements of Statistical Learning': '9780387848570',
-  'Hands-On Machine Learning with Scikit-Learn': '9781098125974',
-  'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow': '9781098125974',
-  'Data Science from Scratch': '9781492041139',
-  "Don't Make Me Think": '9780321965516',
-  'Thinking with Type': '9781568989693',
-  'Zero to One': '9780804139298',
-  "The Innovator's Dilemma": '9781633691780',
-  'Freakonomics': '9780060731335',
-  '1984': '9780451524935',
-  'The Great Gatsby': '9780743273565',
-  'Pride and Prejudice': '9780141439518',
-  "A People's History of the United States": '9780062397348',
-  'A Brief History of Time': '9780553380163',
-  'The Selfish Gene': '9780198788607',
-  'Cosmos': '9780345539434',
-  'The Power of Habit': '9780812981605',
-  'Deep Work': '9781455586691',
-}
+/* Curated BCA course catalogue (demo / offline fallback). */
+const BCA_BOOKS = [
+  // ---------- Java ----------
+  { title: 'Java: The Complete Reference', author: 'Herbert Schildt', subject: 'Java', isbn: '9781260440232', rating: 4.8, pageCount: 1248, level: 'Intermediate', description: 'The definitive guide to Java — the language, the standard library and modern features through the latest Java SE release.' },
+  { title: 'Head First Java', author: 'Kathy Sierra & Bert Bates', subject: 'Java', isbn: '9781491910771', rating: 4.7, pageCount: 752, level: 'Beginner', description: 'A brain-friendly introduction that makes object-oriented Java click through visuals, puzzles and real projects.' },
+  { title: 'Java: How to Program', author: 'Paul Deitel & Harvey Deitel', subject: 'Java', isbn: '9780134743356', rating: 4.5, pageCount: 1248, level: 'Beginner', description: 'A comprehensive, example-driven introduction to Java and object-oriented application development.' },
 
-const DEMO_BOOKS = [
-  { id: 1, title: 'Clean Code', author: 'Robert C. Martin', category: 'Computer Science', rating: 4.7, page_count: 464, level: 'Intermediate', description: 'A handbook of agile software craftsmanship covering naming, functions, comments, formatting and error handling.' },
-  { id: 2, title: 'Atomic Habits', author: 'James Clear', category: 'Self-Development', rating: 4.6, page_count: 320, level: 'Beginner', description: 'An easy and proven way to build good habits and break bad ones.' },
-  { id: 3, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'History', rating: 4.5, page_count: 464, level: 'Beginner', description: 'How a humble ape became the ruler of planet Earth.' },
-  { id: 4, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', category: 'Science', rating: 4.3, page_count: 499, level: 'Intermediate', description: 'A journey into how the two systems of the mind shape our judgment.' },
-  { id: 5, title: 'The Design of Everyday Things', author: 'Don Norman', category: 'Design', rating: 4.5, page_count: 368, level: 'Beginner', description: 'Why design matters and how the best products are intuitive to use.' },
-  { id: 6, title: 'Deep Learning', author: 'Ian Goodfellow', category: 'Data Science', rating: 4.2, page_count: 800, level: 'Advanced', description: 'An introduction to a broad range of topics in deep learning.' },
-  { id: 7, title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', category: 'Computer Science', rating: 4.6, page_count: 1312, level: 'Advanced', description: 'The most comprehensive textbook on algorithms.' },
-  { id: 8, title: 'Thinking in Systems', author: 'Donella H. Meadows', category: 'Science', rating: 4.5, page_count: 218, level: 'Beginner', description: 'A primer on systems thinking.' },
-  { id: 9, title: 'The Lean Startup', author: 'Eric Ries', category: 'Business & Economics', rating: 4.3, page_count: 336, level: 'Beginner', description: 'How constant innovation creates radically successful businesses.' },
-  { id: 10, title: 'To Kill a Mockingbird', author: 'Harper Lee', category: 'Literature', rating: 4.4, page_count: 336, level: 'Beginner', description: 'The unforgettable novel of a childhood in a sleepy Southern town.' },
-  { id: 11, title: 'Guns, Germs, and Steel', author: 'Jared Diamond', category: 'History', rating: 4.2, page_count: 518, level: 'Intermediate', description: 'The fates of human societies examined through geography and environment.' },
-  { id: 12, title: 'The Pragmatic Programmer', author: 'David Thomas', category: 'Computer Science', rating: 4.6, page_count: 352, level: 'Intermediate', description: 'Your journey to mastery — tips, tools, and techniques for modern software development.' },
+  // ---------- C Programming ----------
+  { title: 'Let Us C', author: 'Yashavant Kanetkar', subject: 'C Programming', isbn: '9788183331630', rating: 4.6, pageCount: 656, level: 'Beginner', description: 'The classroom favourite for learning C from scratch, with clear explanations and plenty of solved programs.' },
+  { title: 'Programming in ANSI C', author: 'E. Balagurusamy', subject: 'C Programming', isbn: '9789352602209', rating: 4.5, pageCount: 616, level: 'Beginner', description: 'A structured, syllabus-friendly text introducing C fundamentals, arrays, pointers, structures and files.' },
+  { title: 'The C Programming Language', author: 'Brian W. Kernighan & Dennis M. Ritchie', subject: 'C Programming', isbn: '9780131103627', rating: 4.8, pageCount: 288, level: 'Advanced', description: 'The classic K&R text from the creators of C — concise, precise and timeless.' },
+
+  // ---------- C++ ----------
+  { title: 'C++ Primer', author: 'Stanley B. Lippman, José Lajoie & Barbara Moo', subject: 'C++', isbn: '9780321714114', rating: 4.7, pageCount: 976, level: 'Intermediate', description: 'The go-to introduction to modern C++, progressing from fundamentals to generic and object-oriented programming.' },
+  { title: 'Effective C++', author: 'Scott Meyers', subject: 'C++', isbn: '9780321334879', rating: 4.7, pageCount: 320, level: 'Advanced', description: '55 specific ways to improve your programs and designs — essential reading for serious C++ developers.' },
+  { title: 'The C++ Programming Language', author: 'Bjarne Stroustrup', subject: 'C++', isbn: '9780321563842', rating: 4.6, pageCount: 1376, level: 'Advanced', description: 'The authoritative reference on C++ from its designer, covering the language and standard library in depth.' },
+
+  // ---------- Python ----------
+  { title: 'Python Crash Course', author: 'Eric Matthes', subject: 'Python', isbn: '9781593279288', rating: 4.7, pageCount: 544, level: 'Beginner', description: 'A hands-on, project-based introduction to programming with Python for absolute beginners.' },
+  { title: 'Automate the Boring Stuff with Python', author: 'Al Sweigart', subject: 'Python', isbn: '9781593279929', rating: 4.7, pageCount: 592, level: 'Beginner', description: 'Practical programming for total beginners — write scripts to automate everyday tasks.' },
+  { title: 'Python for Data Analysis', author: 'Wes McKinney', subject: 'Python', isbn: '9781098104030', rating: 4.6, pageCount: 579, level: 'Intermediate', description: 'Data wrangling with pandas, NumPy and IPython — the reference for data work in Python.' },
+
+  // ---------- DBMS ----------
+  { title: 'Database System Concepts', author: 'Abraham Silberschatz, Henry Korth & S. Sudarshan', subject: 'DBMS', isbn: '9780078022159', rating: 4.7, pageCount: 1376, level: 'Intermediate', description: 'A rigorous yet accessible introduction to database design, SQL, transactions and modern data systems.' },
+  { title: 'Fundamentals of Database Systems', author: 'Ramez Elmasri & Shamkant Navathe', subject: 'DBMS', isbn: '9780133970777', rating: 4.6, pageCount: 1272, level: 'Intermediate', description: 'A complete foundation in database modelling, design, implementation and administration.' },
+
+  // ---------- Operating Systems ----------
+  { title: 'Operating System Concepts', author: 'Abraham Silberschatz, Peter Galvin & Greg Gagne', subject: 'Operating Systems', isbn: '9781118063330', rating: 4.7, pageCount: 944, level: 'Intermediate', description: 'The classic "dinosaur book" — processes, concurrency, memory management, storage and protection.' },
+  { title: 'Modern Operating Systems', author: 'Andrew S. Tanenbaum & Herbert Bos', subject: 'Operating Systems', isbn: '9780133591620', rating: 4.6, pageCount: 1136, level: 'Advanced', description: 'A comprehensive overview of operating system design, from processes and threads to distributed systems.' },
+
+  // ---------- Computer Networks ----------
+  { title: 'Computer Networking: A Top-Down Approach', author: 'James Kurose & Keith Ross', subject: 'Computer Networks', isbn: '9780133594140', rating: 4.7, pageCount: 864, level: 'Intermediate', description: 'Learn networking by working from applications down to the physical layer — a student favourite.' },
+  { title: 'Computer Networks', author: 'Andrew S. Tanenbaum & David Wetherall', subject: 'Computer Networks', isbn: '9780132126953', rating: 4.6, pageCount: 960, level: 'Intermediate', description: 'A clear, structured tour of network architecture, protocols and the Internet.' },
+
+  // ---------- Data Structures ----------
+  { title: 'Data Structures Using C', author: 'Reema Thareja', subject: 'Data Structures', isbn: '9780198099307', rating: 4.5, pageCount: 656, level: 'Beginner', description: 'A practical guide to implementing linked lists, stacks, queues, trees and graphs in C.' },
+  { title: 'Introduction to Algorithms', author: 'Thomas H. Cormen, Charles Leiserson, Ronald Rivest & Clifford Stein', subject: 'Data Structures', isbn: '9780262046305', rating: 4.8, pageCount: 1312, level: 'Advanced', description: 'The definitive reference on algorithms — design, analysis and implementation, thoroughly explained.' },
+
+  // ---------- Software Engineering ----------
+  { title: 'Software Engineering', author: 'Ian Sommerville', subject: 'Software Engineering', isbn: '9780133943030', rating: 4.6, pageCount: 816, level: 'Intermediate', description: 'A balanced introduction to software processes, agile methods, architecture, testing and project management.' },
+  { title: "Software Engineering: A Practitioner's Approach", author: 'Roger S. Pressman', subject: 'Software Engineering', isbn: '9780078022128', rating: 4.5, pageCount: 976, level: 'Intermediate', description: 'A practitioner-focused guide to the full software development lifecycle and modern engineering practice.' },
+
+  // ---------- Web Development ----------
+  { title: 'HTML and CSS: Design and Build Websites', author: 'Jon Duckett', subject: 'Web Development', isbn: '9781118008188', rating: 4.7, pageCount: 512, level: 'Beginner', description: 'A beautifully illustrated, beginner-friendly introduction to building websites with HTML and CSS.' },
+  { title: 'Learning React', author: 'Alex Banks & Eve Porcello', subject: 'Web Development', isbn: '9781492051725', rating: 4.5, pageCount: 310, level: 'Intermediate', description: 'Modern patterns for building web applications with React, hooks and functional programming.' },
+  { title: 'JavaScript: The Good Parts', author: 'Douglas Crockford', subject: 'Web Development', isbn: '9780596517748', rating: 4.3, pageCount: 176, level: 'Intermediate', description: 'A concise guide to the elegant, reliable features of JavaScript and how to use them well.' },
+
+  // ---------- AI ----------
+  { title: 'Artificial Intelligence: A Modern Approach', author: 'Stuart Russell & Peter Norvig', subject: 'AI', isbn: '9780134610993', rating: 4.7, pageCount: 1152, level: 'Advanced', description: 'The leading textbook on AI — search, knowledge, learning, perception and the future of intelligent agents.' },
+
+  // ---------- Machine Learning ----------
+  { title: 'Machine Learning', author: 'Tom M. Mitchell', subject: 'Machine Learning', isbn: '9780070428072', rating: 4.5, pageCount: 432, level: 'Advanced', description: 'A foundational text covering supervised learning, reinforcement learning, neural networks and theory.' },
+  { title: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', author: 'Aurélien Géron', subject: 'Machine Learning', isbn: '9781098125974', rating: 4.8, pageCount: 856, level: 'Intermediate', description: 'Practical, code-first concepts and tools for building intelligent systems with Python.' },
+
+  // ---------- Cyber Security ----------
+  { title: 'Cyber Security: Understanding Cyber Crimes, Computer Forensics and Legal Perspectives', author: 'Nina Godbole & Sunit Belapure', subject: 'Cyber Security', isbn: '9788126521791', rating: 4.4, pageCount: 596, level: 'Intermediate', description: 'A syllabus-oriented introduction to cyber crimes, security technologies, forensics and cyber law.' },
+  { title: 'Computer Security: Principles and Practice', author: 'William Stallings & Lawrie Brown', subject: 'Cyber Security', isbn: '9780134794105', rating: 4.5, pageCount: 800, level: 'Advanced', description: 'A comprehensive survey of computer and network security principles, technologies and practice.' },
+
+  // ---------- Cloud Computing ----------
+  { title: 'Cloud Computing: Concepts, Technology & Architecture', author: 'Thomas Erl, Ricardo Puttini & Zaigham Mahmood', subject: 'Cloud Computing', isbn: '9780133387520', rating: 4.5, pageCount: 528, level: 'Intermediate', description: 'A vendor-neutral guide to cloud computing concepts, delivery models, virtualization and architecture.' },
+  { title: 'Cloud Computing: A Hands-On Approach', author: 'Arshdeep Bahga & Vijay Madisetti', subject: 'Cloud Computing', isbn: '9780984882417', rating: 4.4, pageCount: 454, level: 'Intermediate', description: 'A project-based introduction to cloud platforms, virtualization and scalable application design.' },
 ]
 
 function normalizeBook(b, index) {
   const addedMs = b.addedAt
     ? new Date(b.addedAt).getTime()
     : Date.now() - (index + 2) * 24 * 60 * 60 * 1000
+  const subject = b.subject || b.category || 'General'
   return {
     id: b.id,
     title: b.title || 'Untitled',
     author: b.author || 'Unknown author',
-    category: b.category || 'General',
+    category: subject,
+    subject,
     description: b.description || '',
     pageCount: b.pageCount || b.page_count || 0,
     rating: b.rating ?? null,
@@ -132,25 +162,24 @@ function normalizeBook(b, index) {
   }
 }
 
-const DEMO = DEMO_BOOKS.map((b, i) => normalizeBook(b, i))
+const DEMO = BCA_BOOKS.map((b, i) => normalizeBook(b, i))
 
 function bookInitials(title) {
   const words = String(title || '').trim().split(/\s+/).filter(Boolean)
   if (!words.length) return 'B'
-  return words
-    .slice(0, 2)
-    .map(w => w.replace(/[^a-zA-Z0-9]/g, '').charAt(0).toUpperCase())
-    .filter(Boolean)
-    .join('') || 'B'
+  return (
+    words
+      .slice(0, 2)
+      .map(w => w.replace(/[^a-zA-Z0-9]/g, '').charAt(0).toUpperCase())
+      .filter(Boolean)
+      .join('') || 'B'
+  )
 }
 
 function coverUrl(book) {
   if (book.cover) return book.cover
-  const isbn = book.isbn || ISBN_MAP[book.title]
-  if (isbn) {
-    const clean = isbn.replace(/[-\s]/g, '')
-    return `https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`
-  }
+  const isbn = String(book.isbn || '').replace(/[-\s]/g, '')
+  if (isbn) return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
   return ''
 }
 
@@ -273,6 +302,44 @@ function SortIcon({ size = 16 }) {
       <polyline points="15 15 18 18 15 21" />
       <line x1="18" y1="6" x2="18" y2="18" />
     </svg>
+  )
+}
+
+/* ---------------------------- Book cover ---------------------------- */
+
+function BookCover({ book, url, coverClass, imgClass, fallbackClass, children }) {
+  const [broken, setBroken] = useState(!url)
+  const theme = subjectTheme(book.subject || book.category)
+  const showImg = Boolean(url) && !broken
+
+  return (
+    <div className={coverClass}>
+      {showImg && (
+        <img
+          className={imgClass}
+          src={url}
+          alt={`Cover of ${book.title}`}
+          loading="lazy"
+          onError={() => setBroken(true)}
+          onLoad={e => {
+            // Open Library serves a 1px placeholder when a cover is missing.
+            if (e.target.naturalWidth < 40) setBroken(true)
+          }}
+        />
+      )}
+      {!showImg && (
+        <div
+          className={fallbackClass}
+          style={{ background: `linear-gradient(150deg, ${theme.a} 0%, ${theme.b} 100%)` }}
+          aria-hidden="true"
+        >
+          <span className="book-cover-spine" />
+          <span className="book-cover-initials">{bookInitials(book.title)}</span>
+          <span className="book-cover-title">{book.title}</span>
+        </div>
+      )}
+      {children}
+    </div>
   )
 }
 
@@ -419,27 +486,28 @@ export default function Books() {
 
   /* ---------- filtering + sorting ---------- */
 
-  const { visible, stats } = useMemo(() => {
+  const { visible, stats, subjectChips } = useMemo(() => {
     const term = searchQuery.trim().toLowerCase()
 
-    const categories = new Set()
+    const counts = new Map()
     let favCount = 0
     let recentCount = 0
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
 
     books.forEach(b => {
-      categories.add(b.category)
+      const subject = b.subject || b.category
+      counts.set(subject, (counts.get(subject) || 0) + 1)
       if (favorites.has(b.id)) favCount++
       if (b.addedAt > thirtyDaysAgo) recentCount++
     })
 
     const list = books.filter(b => {
       if (term) {
-        const hay = `${b.title} ${b.author} ${b.description} ${b.category}`.toLowerCase()
+        const hay = `${b.title} ${b.author} ${b.description} ${b.subject} ${b.category} ${b.level}`.toLowerCase()
         if (!hay.includes(term)) return false
       }
       if (activeCollection === 'favorites') return favorites.has(b.id)
-      if (activeCategory !== 'all' && b.category !== activeCategory) return false
+      if (activeCategory !== 'all' && b.subject !== activeCategory) return false
       return true
     })
 
@@ -462,18 +530,19 @@ export default function Books() {
         sorted.sort((a, b) => a.title.localeCompare(b.title))
     }
 
+    const chips = SUBJECTS
+      .map(s => ({ ...s, count: s.id === 'all' ? books.length : (counts.get(s.id) || 0) }))
+      .filter(s => s.id === 'all' || s.count > 0)
+
     return {
       visible: sorted,
-      stats: {
-        total: books.length,
-        categories: categories.size,
-        favorites: favCount,
-        recent: recentCount,
-      },
+      stats: { total: books.length, subjects: counts.size, favorites: favCount, recent: recentCount },
+      subjectChips: chips,
     }
   }, [books, searchQuery, activeCategory, activeCollection, sortBy, favorites])
 
-  const hasActiveFilters = searchQuery.trim() !== '' || activeCategory !== 'all' || activeCollection !== 'all' || sortBy !== 'newest'
+  const hasActiveFilters =
+    searchQuery.trim() !== '' || activeCategory !== 'all' || activeCollection !== 'all' || sortBy !== 'newest'
 
   function clearFilters() {
     setSearchQuery('')
@@ -514,78 +583,101 @@ export default function Books() {
   /* ------------------------------ Render ---------------------------- */
 
   const status = readingStatus()
+  const selectedTheme = selectedBook ? subjectTheme(selectedBook.subject || selectedBook.category) : null
 
   return (
     <div className="books-page">
-      {/* ---------- Header ---------- */}
+      {/* ---------- Hero ---------- */}
       <section className="books-hero">
-        <div className="books-hero-top">
-          <div className="lib-logo" aria-hidden="true">
-            <LibraryIcon size={24} />
+        <div className="books-hero-orbs" aria-hidden="true">
+          <span className="books-hero-orb books-hero-orb--a" />
+          <span className="books-hero-orb books-hero-orb--b" />
+        </div>
+
+        <div className="books-hero-inner">
+          <div className="books-hero-top">
+            <div className="lib-logo" aria-hidden="true">
+              <LibraryIcon size={26} />
+            </div>
+            <div className="books-hero-copy">
+              <span className="books-eyebrow">{COPY.eyebrow}</span>
+              <h1 className="books-title">{COPY.title}</h1>
+              <p className="books-subtitle">{COPY.subtitle}</p>
+            </div>
           </div>
-          <div className="books-hero-copy">
-            <h1 className="books-title">{COPY.title}</h1>
-            <p className="books-subtitle">{COPY.subtitle}</p>
+
+          <div className="books-hero-search">
+            <SearchIcon className="books-search-icon" />
+            <input
+              type="text"
+              placeholder={COPY.searchPlaceholder}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              aria-label="Search BCA books, subjects, authors, or programming languages"
+            />
+            {searchQuery && (
+              <button className="books-search-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">
+                <XIcon size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="books-hero-stats">
+            <div className="hero-stat">
+              <span className="hero-stat-value">{stats.total}</span>
+              <span className="hero-stat-label">Books</span>
+            </div>
+            <div className="hero-stat">
+              <span className="hero-stat-value">{stats.subjects}</span>
+              <span className="hero-stat-label">Subjects</span>
+            </div>
+            <div className="hero-stat">
+              <span className="hero-stat-value">{stats.favorites}</span>
+              <span className="hero-stat-label">Favorites</span>
+            </div>
+            <div className="hero-stat">
+              <span className="hero-stat-value">{stats.recent}</span>
+              <span className="hero-stat-label">New This Month</span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ---------- Dashboard Stats ---------- */}
-      <div className="books-stats">
-        <div className="books-stat-card">
-          <span className="books-stat-value">{stats.total}</span>
-          <span className="books-stat-label">Books</span>
-        </div>
-        <div className="books-stat-card">
-          <span className="books-stat-value">{stats.categories}</span>
-          <span className="books-stat-label">Categories</span>
-        </div>
-        <div className="books-stat-card">
-          <span className="books-stat-value">{stats.favorites}</span>
-          <span className="books-stat-label">Favorites</span>
-        </div>
-        <div className="books-stat-card">
-          <span className="books-stat-value">{stats.recent}</span>
-          <span className="books-stat-label">This Month</span>
-        </div>
+      {/* ---------- Subject chips ---------- */}
+      <div className="books-subjects" aria-label="Browse by subject">
+        {subjectChips.map(subject => {
+          const active = activeCategory === subject.id
+          const theme = subject.id === 'all' ? null : subjectTheme(subject.id)
+          return (
+            <button
+              key={subject.id}
+              type="button"
+              aria-pressed={active}
+              className={`subject-chip ${active ? 'subject-chip--active' : ''}`}
+              onClick={() => setActiveCategory(subject.id)}
+              style={active && theme ? { background: theme.soft, color: theme.ink, borderColor: `${theme.ink}44` } : undefined}
+            >
+              {theme && (
+                <span
+                  className="subject-chip-dot"
+                  style={{ background: `linear-gradient(135deg, ${theme.a}, ${theme.b})` }}
+                />
+              )}
+              <span className="subject-chip-label">{subject.label}</span>
+              <span className="subject-chip-count">{subject.count}</span>
+            </button>
+          )
+        })}
       </div>
 
-      {/* ---------- Filters Toolbar ---------- */}
+      {/* ---------- Toolbar ---------- */}
       <div className="books-filters">
-        <div className="books-search">
-          <SearchIcon className="books-search-icon" />
-          <input
-            type="text"
-            placeholder={COPY.searchPlaceholder}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            aria-label="Search books by title, author, or topic"
-          />
-          {searchQuery && (
-            <button className="books-search-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">
-              <XIcon size={14} />
-            </button>
-          )}
-        </div>
-
         <div className="books-filter-group">
           <div className="books-select-wrap">
             <label className="books-select-label">
               <FilterIcon size={14} />
-              Category
+              Collection
             </label>
-            <div className="books-select">
-              <select value={activeCategory} onChange={e => setActiveCategory(e.target.value)} aria-label="Filter by category">
-                {CATEGORIES.map(c => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
-                ))}
-              </select>
-              <ChevronIcon className="books-select-chevron" />
-            </div>
-          </div>
-
-          <div className="books-select-wrap">
-            <label className="books-select-label">Collection</label>
             <div className="books-select">
               <select value={activeCollection} onChange={e => setActiveCollection(e.target.value)} aria-label="Filter by collection">
                 {COLLECTIONS.map(c => (
@@ -599,7 +691,7 @@ export default function Books() {
           <div className="books-select-wrap">
             <label className="books-select-label">
               <SortIcon size={14} />
-              Sort
+              Sort by
             </label>
             <div className="books-select">
               <select value={sortBy} onChange={e => setSortBy(e.target.value)} aria-label="Sort books">
@@ -610,7 +702,9 @@ export default function Books() {
               <ChevronIcon className="books-select-chevron" />
             </div>
           </div>
+        </div>
 
+        <div className="books-filters-right">
           <div className="books-view-toggle" role="radiogroup" aria-label="View mode">
             <button
               className={`books-view-btn ${viewMode === 'grid' ? 'books-view-btn--active' : ''}`}
@@ -629,21 +723,27 @@ export default function Books() {
               <ListIcon size={16} />
             </button>
           </div>
-        </div>
 
-        {hasActiveFilters && (
-          <button className="books-clear-btn" onClick={clearFilters}>
-            <XIcon size={13} />
-            Clear filters
-          </button>
-        )}
+          {hasActiveFilters && (
+            <button className="books-clear-btn" onClick={clearFilters}>
+              <XIcon size={13} />
+              Clear filters
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ---------- Results header ---------- */}
       <div className="books-results">
         <div>
           <h2 className="books-section-title">
-            {searchQuery.trim() ? `Results for \u201c${searchQuery.trim()}\u201d` : 'All Books'}
+            {searchQuery.trim()
+              ? `Results for \u201c${searchQuery.trim()}\u201d`
+              : activeCategory !== 'all'
+                ? activeCategory
+                : activeCollection === 'favorites'
+                  ? 'Favorites'
+                  : 'All Books'}
           </h2>
           <p className="books-section-sub">
             Showing {visible.length} of {books.length} books
@@ -669,7 +769,7 @@ export default function Books() {
         <div className={`books-grid ${viewMode === 'list' ? 'books-grid--list' : ''}`}>
           {visible.map((book, i) => {
             const isFav = favorites.has(book.id)
-            const url = coverUrl(book)
+            const theme = subjectTheme(book.subject)
             return (
               <article
                 key={book.id}
@@ -677,26 +777,19 @@ export default function Books() {
                 onClick={() => openBook(book)}
                 style={{ animationDelay: `${Math.min(i, 9) * 40}ms` }}
               >
-                <div className="book-card-cover">
-                  {url ? (
-                    <img
-                      className="book-card-img"
-                      src={url}
-                      alt={`Cover of ${book.title}`}
-                      loading="lazy"
-                      onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
-                    />
-                  ) : null}
-                  <div
-                    className="book-card-fallback"
-                    style={{
-                      display: url ? 'none' : 'flex',
-                      background: `linear-gradient(145deg, ${categoryCover(book.category).bg}, ${categoryCover(book.category).bg}dd)`,
-                    }}
+                <BookCover
+                  book={book}
+                  url={coverUrl(book)}
+                  coverClass="book-card-cover"
+                  imgClass="book-card-img"
+                  fallbackClass="book-card-fallback"
+                >
+                  <span
+                    className="book-card-subject"
+                    style={{ color: theme.ink, background: theme.soft }}
                   >
-                    <span className="book-card-fallback-initial">{bookInitials(book.title)}</span>
-                    <span className="book-card-fallback-title">{book.title}</span>
-                  </div>
+                    {book.subject}
+                  </span>
                   <button
                     className={`book-card-fav ${isFav ? 'book-card-fav--on' : ''}`}
                     onClick={e => { e.stopPropagation(); toggleFavorite(book.id) }}
@@ -705,10 +798,9 @@ export default function Books() {
                   >
                     <HeartIcon size={14} filled={isFav} />
                   </button>
-                </div>
+                </BookCover>
 
                 <div className="book-card-body">
-                  <span className="book-card-category">{book.category}</span>
                   <h3 className="book-card-title" title={book.title}>{book.title}</h3>
                   <p className="book-card-author">{book.author}</p>
                   <div className="book-card-footer">
@@ -773,29 +865,22 @@ export default function Books() {
               <XIcon size={16} />
             </button>
 
-            <div className="book-modal-cover">
-              {coverUrl(selectedBook) ? (
-                <img
-                  className="book-modal-cover-img"
-                  src={coverUrl(selectedBook)}
-                  alt={`Cover of ${selectedBook.title}`}
-                  onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
-                />
-              ) : null}
-              <div
-                className="book-modal-cover-fallback"
-                style={{
-                  display: coverUrl(selectedBook) ? 'none' : 'flex',
-                  background: `linear-gradient(145deg, ${categoryCover(selectedBook.category).bg}, ${categoryCover(selectedBook.category).bg}dd)`,
-                }}
-              >
-                <span className="book-modal-fallback-initial">{bookInitials(selectedBook.title)}</span>
-                <span className="book-modal-fallback-title">{selectedBook.title}</span>
-              </div>
-            </div>
+            <BookCover
+              book={selectedBook}
+              url={coverUrl(selectedBook)}
+              coverClass="book-modal-cover"
+              imgClass="book-modal-cover-img"
+              fallbackClass="book-modal-cover-fallback"
+            />
 
             <div className="book-modal-info">
               <div className="book-modal-badges">
+                <span
+                  className="book-modal-subject"
+                  style={selectedTheme ? { color: selectedTheme.ink, background: selectedTheme.soft, borderColor: `${selectedTheme.ink}33` } : undefined}
+                >
+                  {selectedBook.subject}
+                </span>
                 <span className={`book-status book-status--${status.tone}`}>
                   <span className="book-status-dot" />
                   {status.label}
@@ -831,8 +916,8 @@ export default function Books() {
 
               <dl className="book-modal-meta">
                 <div className="book-modal-meta-row">
-                  <dt>Category</dt>
-                  <dd>{selectedBook.category}</dd>
+                  <dt>Subject</dt>
+                  <dd>{selectedBook.subject}</dd>
                 </div>
                 <div className="book-modal-meta-row">
                   <dt>Level</dt>

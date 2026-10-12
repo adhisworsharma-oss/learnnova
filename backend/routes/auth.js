@@ -50,9 +50,19 @@ router.post(
       membershipId = generateMembershipId()
     }
 
+    let slug = `${name}${surname}`.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24) || 'reader'
+    while (slug.length < 3) slug += Math.floor(Math.random() * 10)
+    let username = slug
+    for (let i = 0; i < 8; i += 1) {
+      const taken = await User.exists({ username })
+      if (!taken) break
+      username = `${slug}${Math.floor(1000 + Math.random() * 9000)}`
+    }
+
     const user = await User.create({
       name,
       surname,
+      username,
       email,
       passwordHash: hash,
       membershipId,

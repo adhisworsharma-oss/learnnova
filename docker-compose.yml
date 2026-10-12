@@ -2,8 +2,11 @@ services:
   db:
     image: mongo:7
     restart: unless-stopped
-    ports:
-      - "27017:27017"
+    # Host port 27017 is reserved for the locally installed MongoDB service.
+    # The backend container reaches this database over the internal network (db:27017),
+    # so exposing it on the host is not required.
+    expose:
+      - "27017"
     volumes:
       - mongo_data:/data/db
     healthcheck:

@@ -42,6 +42,7 @@ function Root() {
             <Route path="/groups" element={<Groups />} />
             <Route path="/groups/:id" element={<GroupDetail />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:username" element={<Profile />} />
             <Route path="/events" element={<Events />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
