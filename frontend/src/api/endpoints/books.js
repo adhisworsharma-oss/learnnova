@@ -16,12 +16,7 @@ export function createBook(payload, options) {
   return post('/books', payload, options)
 }
 
-/* ---------- demo calls ---------- */
-
-// GET /api/books/demo - our own backend, no auth, no database.
-export function getDemoBooks(options) {
-  return get('/books/demo', options)
-}
+/* ---------- third-party call ---------- */
 
 // A third-party API, to show that absolute URLs work through the same client.
 export function searchOpenLibrary(q, { limit = 10, ...options } = {}) {

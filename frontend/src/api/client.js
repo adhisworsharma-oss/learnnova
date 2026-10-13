@@ -1,7 +1,16 @@
 const TOKEN_KEY = 'learnova_token'
 const USER_KEY = 'learnova_user'
 
-const BASE_URL = String(import.meta.env.VITE_API_URL ?? '/api').replace(/\/+$/, '')
+// Every backend route is mounted under /api (see backend/server.js). Accept the
+// deployed origin (e.g. https://learnnova-6kaq.onrender.com) or a base that
+// already ends in /api, and always resolve to a URL that targets /api.
+function resolveBaseUrl() {
+  const raw = String(import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '')
+  if (!raw) return '/api'
+  return /\/api$/.test(raw) ? raw : `${raw}/api`
+}
+
+const BASE_URL = resolveBaseUrl()
 const DEFAULT_TIMEOUT = 20000
 
 export const UNAUTHORIZED_EVENT = 'learnova:unauthorized'
