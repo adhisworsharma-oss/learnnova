@@ -12,6 +12,7 @@ import favoriteRoutes from './routes/favorites.js'
 import recommendationRoutes from './routes/recommendations.js'
 import dashboardRoutes from './routes/dashboard.js'
 import profileRoutes from './routes/profile.js'
+import studyRoutes from './routes/study.js'
 import chatRoutes from './routes/chat.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 
@@ -65,6 +66,7 @@ app.use('/api/favorites', favoriteRoutes)
 app.use('/api/recommendations', recommendationRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/profile', profileRoutes)
+app.use('/api/study', studyRoutes)
 app.use('/api/chat', chatRoutes)
 
 app.use(notFound)

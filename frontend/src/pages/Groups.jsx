@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Groups.css'
 
 /* ============================================================
-   Learnova — Study Groups (Digital Study Lounge · discovery)
-   Show less initially, reveal more when needed.
+   Learnova — Study Groups (community discovery)
+   Data + business logic preserved. Visual layer redesigned:
+   sage / peach palette, editorial cards, real-data metrics.
    ============================================================ */
 
 const GROUPS = [
@@ -216,36 +217,71 @@ const SUBJECTS = [
   'Projects',
 ]
 
+/* ---- per-subject visual identity (presentation layer only) ---- */
+
+const DEFAULT_THEME = { accent: '#526D5B', soft: '#E6EDE4', ink: '#3C4C40', glyph: 'book' }
+
+const SUBJECT_THEME = {
+  'Computer Science': { accent: '#6E5AC8', soft: '#ECE8FA', ink: '#443188', glyph: 'code' },
+  Literature: { accent: '#6F9A79', soft: '#E4EDE3', ink: '#3F6047', glyph: 'book' },
+  Mathematics: { accent: '#6E86C9', soft: '#E6EAF7', ink: '#3D549A', glyph: 'sigma' },
+  Languages: { accent: '#4C86A8', soft: '#E2EDF3', ink: '#315F76', glyph: 'globe' },
+  'Data Science': { accent: '#4F9E8E', soft: '#DDEEE9', ink: '#2C6C60', glyph: 'chart' },
+  Physics: { accent: '#8A6BB8', soft: '#EFEAF8', ink: '#5B4184', glyph: 'atom' },
+  'Exam Prep': { accent: '#D98A5B', soft: '#F8E8DC', ink: '#A25B33', glyph: 'target' },
+  Projects: { accent: '#C09A34', soft: '#F6EFD8', ink: '#856A1E', glyph: 'tools' },
+}
+
+function themeFor(subject) {
+  return SUBJECT_THEME[subject] || DEFAULT_THEME
+}
+
+function hexA(hex, alpha) {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
 /* ------------------- small icons ------------------- */
 
+const baseSvg = {
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': 'true',
+}
+
 const SearchIcon = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="2" {...baseSvg}>
     <circle cx="11" cy="11" r="8" />
     <line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
 )
 
 const PlusIcon = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="2.4" {...baseSvg}>
     <line x1="12" y1="5" x2="12" y2="19" />
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 )
 
 const ChevronIcon = ({ size = 14 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="2.2" {...baseSvg}>
     <polyline points="6 9 12 15 18 9" />
   </svg>
 )
 
 const CheckIcon = ({ size = 13 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="2.6" {...baseSvg}>
     <path d="M20 6L9 17l-5-5" />
   </svg>
 )
 
 const UsersIcon = ({ size = 14 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="1.9" {...baseSvg}>
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
     <circle cx="9" cy="7" r="4" />
     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -254,17 +290,172 @@ const UsersIcon = ({ size = 14 }) => (
 )
 
 const TalkIcon = ({ size = 14 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="1.9" {...baseSvg}>
     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
   </svg>
 )
 
+const GridIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="1.9" {...baseSvg}>
+    <rect x="3" y="3" width="7" height="7" rx="2" />
+    <rect x="14" y="3" width="7" height="7" rx="2" />
+    <rect x="3" y="14" width="7" height="7" rx="2" />
+    <rect x="14" y="14" width="7" height="7" rx="2" />
+  </svg>
+)
+
+const BookOpenIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="1.9" {...baseSvg}>
+    <path d="M12 7c-2-1.4-4.5-1.6-7-1.2V18c2.5-.4 5-.2 7 1.2 2-1.4 4.5-1.6 7-1.2V5.8c-2.5-.4-5-.2-7 1.2z" />
+    <path d="M12 7v12" />
+  </svg>
+)
+
+const PulseIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="2" {...baseSvg}>
+    <path d="M3 12h4l3-8 4 16 3-8h4" />
+  </svg>
+)
+
+const SortIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="2" {...baseSvg}>
+    <path d="M4 6h16M4 12h11M4 18h6" />
+  </svg>
+)
+
+const SlidersIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="1.9" {...baseSvg}>
+    <line x1="4" y1="7" x2="20" y2="7" />
+    <line x1="4" y1="12" x2="20" y2="12" />
+    <line x1="4" y1="17" x2="20" y2="17" />
+    <circle cx="9" cy="7" r="2.4" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="12" r="2.4" fill="currentColor" stroke="none" />
+    <circle cx="7" cy="17" r="2.4" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+const ArrowRightIcon = ({ size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="2.2" {...baseSvg}>
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </svg>
+)
+
+const FlameIcon = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="1.9" {...baseSvg}>
+    <path d="M12 3c.6 2.6 3.5 3.7 3.5 7.4a3.5 3.5 0 0 1-7 0c0-1.4.6-2.3 1-3.3.9.9 1.7.6 2.5-4.1z" />
+    <path d="M7 14a5 5 0 0 0 10 0" />
+  </svg>
+)
+
+const CalendarIcon = ({ size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="1.9" {...baseSvg}>
+    <rect x="3" y="4.5" width="18" height="16" rx="3" />
+    <line x1="8" y1="3" x2="8" y2="7" />
+    <line x1="16" y1="3" x2="16" y2="7" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+)
+
+const SparkIcon = ({ size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="1.8" {...baseSvg}>
+    <path d="M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21M5.6 5.6l2.5 2.5M15.9 15.9l2.5 2.5M18.4 5.6l-2.5 2.5M8.1 15.9l-2.5 2.5" />
+    <circle cx="12" cy="12" r="3.2" />
+  </svg>
+)
+
 const XIcon = ({ size = 12 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth="2.4" {...baseSvg}>
     <line x1="18" y1="6" x2="6" y2="18" />
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 )
+
+const Spinner = () => <span className="grp-btn-spinner" aria-hidden="true" />
+
+/* ------------------- subject line-art (image fallback) ------------------- */
+
+function SubjectArt({ glyph }) {
+  const common = {
+    className: 'grp-art',
+    viewBox: '0 0 160 120',
+    'aria-hidden': 'true',
+  }
+  if (glyph === 'code') {
+    return (
+      <svg {...common}>
+        <rect x="32" y="30" width="96" height="58" rx="9" />
+        <path d="M20 96h120l-10-8H30z" />
+        <path d="M62 52l-12 11 12 11" />
+        <path d="M98 52l12 11-12 11" />
+        <path d="M88 47l-12 30" />
+      </svg>
+    )
+  }
+  if (glyph === 'sigma') {
+    return (
+      <svg {...common}>
+        <rect x="30" y="28" width="100" height="64" rx="9" />
+        <path d="M30 50h100M80 28v64" />
+        <path d="M56 40h18l-18 14h18" />
+      </svg>
+    )
+  }
+  if (glyph === 'globe') {
+    return (
+      <svg {...common}>
+        <circle cx="80" cy="60" r="34" />
+        <ellipse cx="80" cy="60" rx="15" ry="34" />
+        <path d="M47 50h66M47 70h66" />
+      </svg>
+    )
+  }
+  if (glyph === 'chart') {
+    return (
+      <svg {...common}>
+        <path d="M38 92h84" />
+        <rect x="50" y="66" width="14" height="26" rx="3" />
+        <rect x="74" y="52" width="14" height="40" rx="3" />
+        <rect x="98" y="38" width="14" height="54" rx="3" />
+      </svg>
+    )
+  }
+  if (glyph === 'atom') {
+    return (
+      <svg {...common}>
+        <circle cx="80" cy="60" r="6" />
+        <ellipse cx="80" cy="60" rx="42" ry="17" />
+        <ellipse cx="80" cy="60" rx="42" ry="17" transform="rotate(60 80 60)" />
+        <ellipse cx="80" cy="60" rx="42" ry="17" transform="rotate(-60 80 60)" />
+      </svg>
+    )
+  }
+  if (glyph === 'target') {
+    return (
+      <svg {...common}>
+        <circle cx="80" cy="60" r="34" />
+        <circle cx="80" cy="60" r="20" />
+        <circle cx="80" cy="60" r="7" />
+      </svg>
+    )
+  }
+  if (glyph === 'tools') {
+    return (
+      <svg {...common}>
+        <path d="M94 40a18 18 0 0 0-22 22L40 94l14 14 32-32a18 18 0 0 0 22-22l-12 12-14-14z" />
+        <circle cx="106" cy="102" r="7" />
+      </svg>
+    )
+  }
+  return (
+    <svg {...common}>
+      <rect x="40" y="28" width="80" height="16" rx="4" />
+      <rect x="32" y="52" width="96" height="16" rx="4" />
+      <rect x="46" y="76" width="68" height="16" rx="4" />
+      <path d="M52 28v16" />
+    </svg>
+  )
+}
 
 /* ------------------- filter dropdown ------------------- */
 
@@ -288,8 +479,10 @@ function FilterDropdown({ label, valueLabel, icon, open, onToggle, onClose, alig
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        {icon && <span aria-hidden="true">{icon}</span>}
-        {valueLabel && valueLabel !== label ? <em>{label}: {valueLabel}</em> : label}
+        {icon && <span className="grp-dropdown-icon" aria-hidden="true">{icon}</span>}
+        <span className="grp-dropdown-label">
+          {valueLabel && valueLabel !== label ? <><em>{label}:</em> {valueLabel}</> : label}
+        </span>
         <ChevronIcon />
       </button>
       {open && (
@@ -329,94 +522,91 @@ function CheckOption({ checked, onToggle, children }) {
   )
 }
 
-/* ------------------- group cards ------------------- */
+/* ------------------- group card ------------------- */
 
-function MindsBadge({ count }) {
-  return (
-    <span className="grp-mine-minds">🔥 {count} minds studying here</span>
-  )
+function cleanTrend(label) {
+  return label.replace(/^[^A-Za-z]+/, '').trim()
 }
 
-function MyGroupCard({ group, onOpen }) {
+function GroupCard({ group, onOpen, onJoin, pending }) {
+  const theme = themeFor(group.subject)
+  const shown = group.memberAvatars.slice(0, 3)
+  const extra = Math.max(0, group.members - shown.length)
+  const joined = group.isJoined
+
+  const mediaStyle = {
+    backgroundImage:
+      `radial-gradient(90% 130% at 88% 15%, ${hexA(theme.accent, 0.30)}, transparent 62%),` +
+      `radial-gradient(80% 120% at 6% 95%, ${hexA(theme.accent, 0.20)}, transparent 58%),` +
+      `linear-gradient(140deg, ${theme.soft} 0%, #ffffff 100%)`,
+  }
+
   return (
-    <article className={`grp-mine-card grp-tint--${group.tint}`} onClick={() => onOpen(group.id)}>
-      <span className="grp-mine-doodle" aria-hidden="true">{group.doodle}</span>
-
-      <div className="grp-mine-card-top">
-        <span className="grp-mine-subject">{group.subject}</span>
-        <span className="grp-mine-active">
-          <span className="grp-live-dot" />
-          {group.activeNow} studying
-        </span>
+    <article
+      className="grp-card"
+      style={{ '--accent': theme.accent, '--accent-soft': theme.soft, '--accent-ink': theme.ink }}
+      onClick={() => onOpen(group.id)}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen(group.id)
+        }
+      }}
+      tabIndex={0}
+      role="link"
+      aria-label={`Open ${group.name}`}
+    >
+      <div className="grp-card-media" style={mediaStyle}>
+        <SubjectArt glyph={theme.glyph} />
+        <span className="grp-card-badge">{group.subject}</span>
+        {group.trendingLabel && (
+          <span className="grp-card-flag"><FlameIcon /> {cleanTrend(group.trendingLabel)}</span>
+        )}
+        {group.activeNow > 0 && (
+          <span className="grp-card-live"><span className="grp-live-dot" /> {group.activeNow} online</span>
+        )}
       </div>
 
-      <h3 className="grp-mine-name">{group.name}</h3>
-      <p className="grp-mine-desc">{group.description}</p>
+      <div className="grp-card-body">
+        <h3 className="grp-card-name">{group.name}</h3>
+        <p className="grp-card-desc">{group.description}</p>
 
-      <div className="grp-mine-stats">
-        <span className="grp-mine-stat"><UsersIcon /> <strong>{group.members}</strong> members</span>
-        <span className="grp-mine-stat"><TalkIcon /> <strong>{group.posts}</strong> discussions</span>
-        <div className="grp-stacked-avatars" aria-hidden="true">
-          {group.memberAvatars.map(([initials, color], i) => (
-            <span key={i} className="grp-stack-avatar" style={{ background: color }}>{initials}</span>
-          ))}
+        <div className="grp-card-meta">
+          <span className="grp-card-stat"><UsersIcon size={14} /> <strong>{group.members}</strong> members</span>
+          <span className="grp-card-sep" aria-hidden="true" />
+          <span className="grp-card-stat"><TalkIcon size={14} /> <strong>{group.posts}</strong> discussions</span>
         </div>
-      </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <MindsBadge count={group.activeNow} />
-        <button className="grp-mine-open" onClick={e => { e.stopPropagation(); onOpen(group.id) }}>
-          Open Group
-          <span className="arrow" aria-hidden="true">→</span>
-        </button>
-      </div>
-    </article>
-  )
-}
+        <div className="grp-card-foot">
+          <div className="grp-avatars" aria-hidden="true">
+            {shown.map(([initials, color], i) => (
+              <span key={initials + i} className="grp-avatar" style={{ background: color, zIndex: shown.length - i }}>
+                {initials}
+              </span>
+            ))}
+            {extra > 0 && <span className="grp-avatar grp-avatar--more">+{extra > 999 ? '999+' : extra}</span>}
+          </div>
 
-function DiscoverCard({ group, onOpen, onToggleJoin }) {
-  return (
-    <article className="grp-discover-card" onClick={() => onOpen(group.id)}>
-      <div className="grp-discover-head">
-        <div className="grp-discover-avatar" style={{ background: group.accent }}>{group.name.charAt(0)}</div>
-        <div className="grp-discover-id">
-          <div className="grp-discover-subject">{group.subject}</div>
-          <div className="grp-discover-name">{group.name}</div>
-        </div>
-      </div>
-
-      <p className="grp-discover-desc">{group.description}</p>
-
-      <div className="grp-discover-footer">
-        <div className="grp-discover-meta">
-          <span><UsersIcon size={13} /> {group.members}</span>
-          {group.activeNow > 0 && (
-            <span className="grp-live-tag">
-              <span className="grp-live-dot" />
-              {group.activeNow}
-            </span>
+          {joined ? (
+            <button
+              className="grp-card-action grp-card-action--open"
+              onClick={e => { e.stopPropagation(); onOpen(group.id) }}
+            >
+              Open Discussion
+              <ArrowRightIcon />
+            </button>
+          ) : (
+            <button
+              className={`grp-card-action grp-card-action--join ${pending ? 'is-pending' : ''}`}
+              onClick={e => { e.stopPropagation(); onJoin(group.id) }}
+              disabled={pending}
+              aria-busy={pending}
+            >
+              {pending ? <Spinner /> : <PlusIcon size={14} />}
+              {pending ? 'Joining' : 'Join Group'}
+            </button>
           )}
         </div>
-        <button
-          className={`grp-join-btn ${group.isJoined ? 'grp-join-btn--joined' : ''}`}
-          onClick={e => { e.stopPropagation(); onToggleJoin(group.id) }}
-          aria-pressed={group.isJoined}
-        >
-          {group.isJoined ? 'Joined' : 'Join Group'}
-        </button>
-      </div>
-    </article>
-  )
-}
-
-function TrendCard({ group, onOpen }) {
-  return (
-    <article className="grp-trend-card" onClick={() => onOpen(group.id)}>
-      <div className="grp-trend-emoji" aria-hidden="true">{group.doodle}</div>
-      <div className="grp-trend-info">
-        <div className="grp-trend-label">{group.trendingLabel}</div>
-        <div className="grp-trend-name">{group.name}</div>
-        <div className="grp-trend-metrics">{group.members} members · {group.activeNow} studying now</div>
       </div>
     </article>
   )
@@ -425,48 +615,62 @@ function TrendCard({ group, onOpen }) {
 /* ------------------- community pulse ------------------- */
 
 const PULSE_EVENTS = [
-  { month: 'SEP', day: '18', name: 'Algorithms Night', group: 'Computer Science Hub' },
-  { month: 'SEP', day: '21', name: 'Group Q&A', group: 'Book Club' },
+  { month: 'SEP', day: '18', name: 'Algorithms Night', group: 'Computer Science Hub', groupId: 1 },
+  { month: 'SEP', day: '21', name: 'Group Q&A', group: 'Book Club', groupId: 2 },
+  { month: 'SEP', day: '24', name: 'Problem Set Party', group: 'Physics Problem Solvers', groupId: 6 },
 ]
 
-function CommunityPulse({ onOpenGroup }) {
+function CommunityPulse({ onOpenGroup, popular, totalStudying, trendingCount, totalDiscussions }) {
   return (
-    <aside className="grp-pulse">
+    <aside className="grp-pulse" aria-label="Community pulse">
       <div className="grp-pulse-card">
-        <h3 className="grp-pulse-title"><span aria-hidden="true">🎈</span> Community Pulse</h3>
-
-        <div className="grp-pulse-block">
-          <div className="grp-pulse-block-title">Upcoming</div>
-          {PULSE_EVENTS.map(ev => (
-            <div className="grp-pulse-event" key={ev.name}>
-              <div className="grp-pulse-date">
-                <span className="grp-pulse-date-month">{ev.month}</span>
-                <span className="grp-pulse-date-day">{ev.day}</span>
-              </div>
-              <div>
-                <div className="grp-pulse-event-name">{ev.name}</div>
-                <div className="grp-pulse-event-group">{ev.group}</div>
-              </div>
-            </div>
-          ))}
+        <div className="grp-pulse-head">
+          <span className="grp-pulse-mark" aria-hidden="true"><SparkIcon size={13} /></span>
+          <h3 className="grp-pulse-title">Community Pulse</h3>
         </div>
 
         <div className="grp-pulse-block">
-          <div className="grp-pulse-block-title">Activity</div>
-          <div className="grp-pulse-activity"><span className="emoji">🔥</span> 24 students studying now</div>
-          <div className="grp-pulse-activity"><span className="emoji">💡</span> 8 new discussions today</div>
+          <div className="grp-pulse-block-title"><CalendarIcon size={13} /> Upcoming</div>
+          {PULSE_EVENTS.map(ev => {
+            const g = popular.find(x => x.id === ev.groupId)
+            const tone = g ? themeFor(g.subject).accent : DEFAULT_THEME.accent
+            return (
+              <button className="grp-pulse-event" key={ev.name} onClick={() => onOpenGroup(ev.groupId)}>
+                <span className="grp-pulse-date" style={{ '--tone': tone }}>
+                  <span className="grp-pulse-date-month">{ev.month}</span>
+                  <span className="grp-pulse-date-day">{ev.day}</span>
+                </span>
+                <span className="grp-pulse-event-info">
+                  <span className="grp-pulse-event-name">{ev.name}</span>
+                  <span className="grp-pulse-event-group">{ev.group}</span>
+                </span>
+              </button>
+            )
+          })}
         </div>
 
         <div className="grp-pulse-block">
-          <div className="grp-pulse-block-title">Popular</div>
-          <div className="grp-pulse-popular" onClick={() => onOpenGroup(1)}>
-            <span className="grp-pulse-rank">1</span>
-            <div>
-              <div className="grp-pulse-popular-name">Computer Science Hub</div>
-              <div className="grp-pulse-popular-meta">24 active · 128 members</div>
-            </div>
-            <div className="grp-pulse-popular-avatar" style={{ background: '#7046C5' }}>C</div>
-          </div>
+          <div className="grp-pulse-block-title"><PulseIcon size={13} /> Activity</div>
+          <div className="grp-pulse-activity"><span className="grp-pulse-activity-dot grp-pulse-activity-dot--live" /> {totalStudying} students studying now</div>
+          <div className="grp-pulse-activity"><span className="grp-pulse-activity-dot" /> {trendingCount} groups trending today</div>
+          <div className="grp-pulse-activity"><span className="grp-pulse-activity-dot" /> {totalDiscussions.toLocaleString()} discussions shared</div>
+        </div>
+
+        <div className="grp-pulse-block">
+          <div className="grp-pulse-block-title"><FlameIcon size={13} /> Popular</div>
+          {popular.map((g, i) => {
+            const theme = themeFor(g.subject)
+            return (
+              <button className="grp-pulse-popular" key={g.id} onClick={() => onOpenGroup(g.id)}>
+                <span className="grp-pulse-rank">{i + 1}</span>
+                <span className="grp-pulse-popular-info">
+                  <span className="grp-pulse-popular-name">{g.name}</span>
+                  <span className="grp-pulse-popular-meta">{g.activeNow} active · {g.members} members</span>
+                </span>
+                <span className="grp-pulse-popular-avatar" style={{ background: theme.accent }}>{g.name.charAt(0)}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
     </aside>
@@ -480,6 +684,8 @@ function CreateGroupModal({ onClose }) {
   const [subject, setSubject] = useState(SUBJECTS[0])
   const [description, setDescription] = useState('')
   const [created, setCreated] = useState(false)
+
+  const theme = themeFor(subject)
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -496,13 +702,16 @@ function CreateGroupModal({ onClose }) {
 
         {created ? (
           <div className="grp-modal-success">
-            <div className="grp-modal-success-icon">🎉</div>
+            <div className="grp-modal-success-icon" style={{ background: theme.soft, color: theme.accent }}>
+              <SparkIcon size={30} />
+            </div>
             <h3>Group created!</h3>
             <p>{`"${name}" is ready. Invite your classmates and start the first discussion.`}</p>
             <button className="grp-create-btn" onClick={onClose}>Done</button>
           </div>
         ) : (
           <>
+            <span className="grp-modal-eyebrow">New study group</span>
             <h3 className="grp-modal-title">Create a study group</h3>
             <p className="grp-modal-sub">Start a cozy corner for a subject you love — invite a friend too.</p>
             <form onSubmit={handleSubmit}>
@@ -551,6 +760,8 @@ export default function Groups() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [openMenu, setOpenMenu] = useState(null)
+  const [pendingJoin, setPendingJoin] = useState({})
+  const [toast, setToast] = useState(null)
 
   const [myFilter, setMyFilter] = useState('all')
   const [subjectFilter, setSubjectFilter] = useState('all')
@@ -558,12 +769,25 @@ export default function Groups() {
   const [sortBy, setSortBy] = useState('recommended')
   const [more, setMore] = useState({ public: false, level: 'all', events: false, active: false })
 
+  useEffect(() => {
+    if (!toast) return undefined
+    const t = setTimeout(() => setToast(null), 2600)
+    return () => clearTimeout(t)
+  }, [toast])
+
   function toggleJoin(groupId) {
-    setGroups(prev => prev.map(g =>
-      g.id === groupId
-        ? { ...g, isJoined: !g.isJoined, members: g.isJoined ? g.members - 1 : g.members + 1 }
-        : g
-    ))
+    if (pendingJoin[groupId]) return
+    setPendingJoin(p => ({ ...p, [groupId]: true }))
+    window.setTimeout(() => {
+      let joined = false
+      setGroups(prev => prev.map(g => {
+        if (g.id !== groupId) return g
+        joined = !g.isJoined
+        return { ...g, isJoined: joined, members: g.isJoined ? g.members - 1 : g.members + 1 }
+      }))
+      setPendingJoin(p => ({ ...p, [groupId]: false }))
+      setToast({ text: joined ? 'You joined this group.' : 'You left this group.', tone: joined ? 'success' : 'neutral' })
+    }, 500)
   }
 
   function openGroup(id) {
@@ -640,6 +864,20 @@ export default function Groups() {
 
   const filtersActive = !allDefaults() || searchQuery.trim() !== ''
 
+  /* ---- real, data-driven community metrics ---- */
+
+  const metrics = useMemo(() => {
+    const totalMembers = groups.reduce((s, g) => s + g.members, 0)
+    const totalDiscussions = groups.reduce((s, g) => s + g.posts, 0)
+    const totalStudying = groups.reduce((s, g) => s + g.activeNow, 0)
+    return { totalMembers, totalDiscussions, totalStudying }
+  }, [groups])
+
+  const popular = useMemo(
+    () => [...groups].sort((a, b) => b.activeNow - a.activeNow || b.members - a.members).slice(0, 3),
+    [groups]
+  )
+
   return (
     <div className="groups-page">
       {/* ---------- Header ---------- */}
@@ -675,11 +913,13 @@ export default function Groups() {
         </div>
       </section>
 
-      {/* ---------- Filter Dashboard ---------- */}
+      {/* ---------- Filter dashboard ---------- */}
       <div className="grp-filters">
+        <span className="grp-filters-label">Filter</span>
         <FilterDropdown
           label="All Groups"
           valueLabel={MY_FILTERS[myFilter].label}
+          icon={<GridIcon size={15} />}
           open={openMenu === 'my'}
           onToggle={() => setOpenMenu(openMenu === 'my' ? null : 'my')}
           onClose={() => setOpenMenu(null)}
@@ -694,6 +934,7 @@ export default function Groups() {
         <FilterDropdown
           label="Subject"
           valueLabel={subjectFilter === 'all' ? null : subjectFilter}
+          icon={<BookOpenIcon size={15} />}
           open={openMenu === 'subject'}
           onToggle={() => setOpenMenu(openMenu === 'subject' ? null : 'subject')}
           onClose={() => setOpenMenu(null)}
@@ -711,6 +952,7 @@ export default function Groups() {
         <FilterDropdown
           label="Activity"
           valueLabel={activityFilter === 'all' ? null : ACTIVITY_FILTERS[activityFilter].label}
+          icon={<PulseIcon size={15} />}
           open={openMenu === 'activity'}
           onToggle={() => setOpenMenu(openMenu === 'activity' ? null : 'activity')}
           onClose={() => setOpenMenu(null)}
@@ -725,6 +967,7 @@ export default function Groups() {
         <FilterDropdown
           label="Sort by"
           valueLabel={SORT_FILTERS[sortBy].label}
+          icon={<SortIcon size={15} />}
           open={openMenu === 'sort'}
           onToggle={() => setOpenMenu(openMenu === 'sort' ? null : 'sort')}
           onClose={() => setOpenMenu(null)}
@@ -738,6 +981,7 @@ export default function Groups() {
 
         <FilterDropdown
           label="More Filters"
+          icon={<SlidersIcon size={15} />}
           open={openMenu === 'more'}
           onToggle={() => setOpenMenu(openMenu === 'more' ? null : 'more')}
           onClose={() => setOpenMenu(null)}
@@ -776,14 +1020,36 @@ export default function Groups() {
         </div>
       )}
 
-      {/* ---------- Community Summary ---------- */}
-      <div className="grp-summary">
-        <span className="grp-summary-label"><span aria-hidden="true">🪴</span> Your study community</span>
-        <span className="grp-summary-sep" aria-hidden="true" />
-        <span className="grp-summary-item"><strong>{groups.length}</strong> groups</span>
-        <span className="grp-summary-item"><strong>887</strong> members</span>
-        <span className="grp-summary-item"><strong>2.1k</strong> discussions</span>
-        <span className="grp-summary-item"><span aria-hidden="true">🔥</span> <strong>153</strong> studying now</span>
+      {/* ---------- Community metrics ---------- */}
+      <div className="grp-metrics" role="group" aria-label="Community statistics">
+        <div className="grp-metric">
+          <span className="grp-metric-icon grp-metric-icon--sage" aria-hidden="true"><GridIcon size={17} /></span>
+          <span className="grp-metric-body">
+            <span className="grp-metric-num">{groups.length}</span>
+            <span className="grp-metric-label">Study groups</span>
+          </span>
+        </div>
+        <div className="grp-metric">
+          <span className="grp-metric-icon grp-metric-icon--violet" aria-hidden="true"><UsersIcon size={17} /></span>
+          <span className="grp-metric-body">
+            <span className="grp-metric-num">{metrics.totalMembers.toLocaleString()}</span>
+            <span className="grp-metric-label">Members</span>
+          </span>
+        </div>
+        <div className="grp-metric">
+          <span className="grp-metric-icon grp-metric-icon--peach" aria-hidden="true"><TalkIcon size={17} /></span>
+          <span className="grp-metric-body">
+            <span className="grp-metric-num">{metrics.totalDiscussions.toLocaleString()}</span>
+            <span className="grp-metric-label">Discussions</span>
+          </span>
+        </div>
+        <div className="grp-metric">
+          <span className="grp-metric-icon grp-metric-icon--live" aria-hidden="true"><span className="grp-live-dot" /></span>
+          <span className="grp-metric-body">
+            <span className="grp-metric-num">{metrics.totalStudying}</span>
+            <span className="grp-metric-label">Studying now</span>
+          </span>
+        </div>
       </div>
 
       {/* ---------- Content ---------- */}
@@ -791,22 +1057,25 @@ export default function Groups() {
         <div className="grp-main">
           {filtersActive ? (
             filtered.length > 0 ? (
-              <div className="grp-section" style={{ marginTop: '44px' }}>
+              <div className="grp-section grp-section--first">
                 <div className="grp-section-head">
                   <div>
                     <div className="grp-section-kicker">Results</div>
-                    <h2 className="grp-section-title" style={{ fontFamily: 'var(--grp-font-display)', fontSize: '1.15rem' }}>
+                    <h2 className="grp-section-title">
                       {searchQuery ? `Search: "${searchQuery}"` : showFilteredLabel()}
                     </h2>
+                    <p className="grp-section-sub">{filtered.length} {filtered.length === 1 ? 'group' : 'groups'} found</p>
                   </div>
-                  <span className="grp-section-link" onClick={clearAll}>Reset filters</span>
+                  <button className="grp-section-link" onClick={clearAll}>Reset filters</button>
                 </div>
-                <div className="grp-discover-grid">{filtered.map(g => (
-                  <DiscoverCard key={g.id} group={g} onOpen={openGroup} onToggleJoin={toggleJoin} />
-                ))}</div>
+                <div className="grp-discover-grid">
+                  {filtered.map(g => (
+                    <GroupCard key={g.id} group={g} onOpen={openGroup} onJoin={toggleJoin} pending={!!pendingJoin[g.id]} />
+                  ))}
+                </div>
               </div>
             ) : (
-              <div className="grp-empty" style={{ marginTop: '44px' }}>
+              <div className="grp-empty grp-section--first">
                 <div className="grp-empty-doodle" aria-hidden="true">🔍</div>
                 <h3 className="grp-empty-title">Nothing matched</h3>
                 <p className="grp-empty-text">Try a different keyword or remove a filter or two — the right community is out there.</p>
@@ -816,27 +1085,29 @@ export default function Groups() {
           ) : (
             <>
               {/* My Groups */}
-              <section className="grp-section">
+              <section className="grp-section grp-section--first">
                 <div className="grp-section-head">
                   <div>
                     <div className="grp-section-kicker">Your spaces</div>
                     <h2 className="grp-section-title">My Groups</h2>
                     <p className="grp-section-sub">Your spaces for learning, discussing, and collaborating.</p>
                   </div>
-                  <button className="grp-section-link" onClick={() => { setMyFilter('mine'); setSearchQuery(''); }}>
+                  <button className="grp-section-link" onClick={() => { setMyFilter('mine'); setSearchQuery('') }}>
                     View all →
                   </button>
                 </div>
                 {myGroups.length > 0 ? (
-                  <div className="grp-mine-grid">
-                    {myGroups.map(g => <MyGroupCard key={g.id} group={g} onOpen={openGroup} />)}
+                  <div className="grp-discover-grid">
+                    {myGroups.map(g => (
+                      <GroupCard key={g.id} group={g} onOpen={openGroup} onJoin={toggleJoin} pending={!!pendingJoin[g.id]} />
+                    ))}
                   </div>
                 ) : (
                   <div className="grp-empty">
                     <div className="grp-empty-doodle" aria-hidden="true">🎒</div>
                     <h3 className="grp-empty-title">Your study circle is waiting</h3>
                     <p className="grp-empty-text">Find a group that matches what you are learning right now.</p>
-                    <button className="grp-empty-btn" onClick={() => { setMyFilter('all'); setSubjectFilter('all'); }}>Discover groups</button>
+                    <button className="grp-empty-btn" onClick={() => { setMyFilter('all'); setSubjectFilter('all') }}>Discover groups</button>
                   </div>
                 )}
               </section>
@@ -853,8 +1124,8 @@ export default function Groups() {
                   </div>
                   <div className="grp-discover-grid">
                     {discover.map((g, i) => (
-                      <div key={g.id} style={{ animationDelay: `${Math.min(i, 5) * 60}ms` }}>
-                        <DiscoverCard group={g} onOpen={openGroup} onToggleJoin={toggleJoin} />
+                      <div key={g.id} className="grp-card-wrap" style={{ animationDelay: `${Math.min(i, 5) * 60}ms` }}>
+                        <GroupCard group={g} onOpen={openGroup} onJoin={toggleJoin} pending={!!pendingJoin[g.id]} />
                       </div>
                     ))}
                   </div>
@@ -862,28 +1133,62 @@ export default function Groups() {
               )}
 
               {/* Trending */}
-              <section className="grp-section">
-                <div className="grp-section-head">
-                  <div>
-                    <div className="grp-section-kicker">What is hot</div>
-                    <h2 className="grp-section-title">Trending in Learnova</h2>
-                    <p className="grp-section-sub">A peek at where the community is gathering right now.</p>
+              {trending.length > 0 && (
+                <section className="grp-section">
+                  <div className="grp-section-head">
+                    <div>
+                      <div className="grp-section-kicker">What is hot</div>
+                      <h2 className="grp-section-title">Trending in Learnova</h2>
+                      <p className="grp-section-sub">A peek at where the community is gathering right now.</p>
+                    </div>
                   </div>
-                </div>
-                <div className="grp-trend-list">
-                  {trending.slice(0, 3).map(g => <TrendCard key={g.id} group={g} onOpen={openGroup} />)}
-                </div>
-              </section>
+                  <div className="grp-trend-list">
+                    {trending.slice(0, 3).map(g => {
+                      const theme = themeFor(g.subject)
+                      return (
+                        <button
+                          className="grp-trend-card"
+                          key={g.id}
+                          onClick={() => openGroup(g.id)}
+                          style={{ '--accent': theme.accent, '--accent-soft': theme.soft }}
+                        >
+                          <span className="grp-trend-emoji" aria-hidden="true">
+                            <span className="grp-trend-art"><SubjectArt glyph={theme.glyph} /></span>
+                          </span>
+                          <span className="grp-trend-info">
+                            <span className="grp-trend-label">{cleanTrend(g.trendingLabel)}</span>
+                            <span className="grp-trend-name">{g.name}</span>
+                            <span className="grp-trend-metrics">{g.members} members · {g.activeNow} studying now</span>
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </section>
+              )}
             </>
           )}
         </div>
 
         {/* ---------- Community Pulse ---------- */}
-        <CommunityPulse onOpenGroup={openGroup} />
+        <CommunityPulse
+          onOpenGroup={openGroup}
+          popular={popular}
+          totalStudying={metrics.totalStudying}
+          trendingCount={trending.length}
+          totalDiscussions={metrics.totalDiscussions}
+        />
       </div>
 
       {/* ---------- Create Group modal ---------- */}
       {showCreateModal && <CreateGroupModal onClose={() => setShowCreateModal(false)} />}
+
+      {/* ---------- Feedback toast ---------- */}
+      {toast && (
+        <div className={`grp-toast ${toast.tone === 'success' ? 'grp-toast--success' : ''}`} role="status" aria-live="polite">
+          {toast.text}
+        </div>
+      )}
     </div>
   )
 }
