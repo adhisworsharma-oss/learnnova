@@ -1,11 +1,27 @@
 /* ============================================================
    Dashboard (hm-*) — home feed, study tracker, panels
+   Matcha Mist, Beige & Ecru Theme
    ============================================================ */
 
 .hm-page {
+  --hm-matcha-mist: #DCE8D5;
+  --hm-soft-matcha: #C6D8BE;
+  --hm-muted-sage: #A5B99B;
+  --hm-deep-sage: #687F5C;
+  --hm-forest-green: #40553B;
+  --hm-warm-beige: #F2E8D8;
+  --hm-ecru: #F4F0E6;
+  --hm-light-brown: #B89B7A;
+  --hm-warm-cream: #FAF8F2;
+  --hm-white: #FFFFFF;
+  --hm-dark-brown: #3D352D;
+  --hm-warm-gray: #776E63;
+  --hm-soft-border: #E4DED3;
+
   max-width: 1180px;
   margin: 0 auto;
   padding: 4px 0 40px;
+  background: var(--hm-ecru);
 }
 
 .hm-grid {
@@ -37,11 +53,11 @@
 /* ---------- Shared card + section heading ---------- */
 
 .hm-card {
-  background: var(--surface-elevated);
-  border: 1px solid var(--border);
+  background: var(--hm-white);
+  border: 1px solid var(--hm-soft-border);
   border-radius: var(--radius);
   padding: 18px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(61, 53, 45, 0.04);
 }
 
 .hm-section-head {
@@ -57,8 +73,8 @@
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: var(--surface-dim);
-  color: var(--violet-mid);
+  background: var(--hm-matcha-mist);
+  color: var(--hm-deep-sage);
   flex-shrink: 0;
 }
 
@@ -67,7 +83,7 @@
   font-size: 0.98rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--ink);
+  color: var(--hm-dark-brown);
 }
 
 .hm-section-link {
@@ -77,7 +93,7 @@
   gap: 4px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--violet-mid);
+  color: var(--hm-deep-sage);
   text-decoration: none;
   border-radius: 6px;
   padding: 4px 6px;
@@ -85,7 +101,7 @@
 }
 
 .hm-section-link:hover {
-  background: var(--surface-dim);
+  background: var(--hm-matcha-mist);
 }
 
 /* ---------- Buttons ---------- */
@@ -111,23 +127,23 @@
 }
 
 .hm-btn--primary {
-  background: var(--violet-mid);
+  background: var(--hm-deep-sage);
   color: #fff;
 }
 
 .hm-btn--primary:hover {
-  background: #6d28d9;
+  background: var(--hm-forest-green);
 }
 
 .hm-btn--ghost {
-  background: none;
-  border-color: var(--border-strong);
-  color: var(--ink-secondary);
+  background: var(--hm-warm-cream);
+  border-color: var(--hm-muted-sage);
+  color: var(--hm-dark-brown);
 }
 
 .hm-btn--ghost:hover {
-  background: var(--surface-dim);
-  color: var(--ink);
+  background: var(--hm-matcha-mist);
+  color: var(--hm-dark-brown);
 }
 
 .hm-btn--stop {
@@ -150,7 +166,7 @@
   align-self: flex-start;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--violet-mid);
+  color: var(--hm-deep-sage);
   text-decoration: none;
 }
 
@@ -203,9 +219,9 @@
   justify-content: space-between;
   gap: 18px;
   flex-wrap: wrap;
-  background: linear-gradient(135deg, var(--deep), var(--violet-mid));
-  border: none;
-  color: #fff;
+  background: var(--hm-matcha-mist);
+  border: 1px solid var(--hm-soft-matcha);
+  color: var(--hm-dark-brown);
 }
 
 .hm-welcome-copy h1 {
@@ -213,12 +229,14 @@
   font-size: 1.45rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  color: var(--hm-forest-green);
 }
 
 .hm-welcome-copy p {
   margin-top: 3px;
   font-size: 0.88rem;
-  opacity: 0.85;
+  color: var(--hm-dark-brown);
+  opacity: 0.9;
 }
 
 .hm-welcome-actions {
@@ -232,10 +250,10 @@
   align-items: center;
   gap: 6px;
   padding: 8px 13px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid var(--hm-muted-sage);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--hm-white);
+  color: var(--hm-dark-brown);
   font-size: 0.8rem;
   font-weight: 600;
   text-decoration: none;
@@ -244,8 +262,8 @@
 }
 
 .hm-welcome-chip:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: var(--hm-soft-matcha);
+  border-color: var(--hm-deep-sage);
 }
 
 /* ============================================================
@@ -278,19 +296,19 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  color: var(--hm-warm-gray);
 }
 
 .hm-study-stat strong {
   font-family: var(--font-display);
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--hm-dark-brown);
 }
 
 .hm-study-sep {
   width: 1px;
-  background: var(--border);
+  background: var(--hm-soft-border);
 }
 
 .hm-timer {
@@ -309,8 +327,8 @@
 }
 
 .hm-timer-dot--on {
-  background: var(--pink);
-  box-shadow: 0 0 0 4px rgba(232, 75, 122, 0.18);
+  background: var(--hm-deep-sage);
+  box-shadow: 0 0 0 4px rgba(104, 127, 92, 0.18);
   animation: hm-pulse 1.4s ease-in-out infinite;
 }
 
@@ -334,9 +352,9 @@
   flex-direction: column;
   gap: 8px;
   padding: 13px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--hm-soft-border);
   border-radius: var(--radius-sm);
-  background: var(--surface-dim);
+  background: var(--hm-ecru);
 }
 
 .hm-goal-top {
@@ -352,17 +370,17 @@
   gap: 5px;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--ink-secondary);
+  color: var(--hm-dark-brown);
 }
 
 .hm-goal-value {
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--hm-warm-gray);
 }
 
 .hm-goal-value em {
   font-style: normal;
-  color: var(--muted-light);
+  color: var(--hm-warm-gray);
 }
 
 .hm-goal-adjust {
@@ -371,7 +389,7 @@
   justify-content: space-between;
   gap: 10px;
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--hm-warm-gray);
 }
 
 .hm-goal-adjust-ctr {
@@ -384,10 +402,10 @@
   height: 26px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--hm-muted-sage);
   border-radius: 7px;
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--hm-white);
+  color: var(--hm-dark-brown);
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;
@@ -395,9 +413,9 @@
 }
 
 .hm-goal-adjust-ctr button:hover {
-  background: var(--violet-mid);
-  border-color: var(--violet-mid);
-  color: #fff;
+  background: var(--hm-matcha-mist);
+  border-color: var(--hm-deep-sage);
+  color: var(--hm-dark-brown);
 }
 
 /* ---------- Progress bars ---------- */
@@ -406,7 +424,7 @@
   position: relative;
   height: 6px;
   border-radius: 999px;
-  background: var(--surface-input);
+  background: var(--hm-soft-border);
   overflow: hidden;
 }
 
@@ -417,7 +435,7 @@
 .hm-progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--violet-mid), var(--plum));
+  background: var(--hm-deep-sage);
   transition: width var(--transition-smooth);
 }
 
@@ -434,7 +452,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  color: var(--hm-warm-gray);
 }
 
 .hm-week-bars {
@@ -459,7 +477,7 @@
   width: 100%;
   display: flex;
   align-items: flex-end;
-  background: var(--surface-input);
+  background: var(--hm-soft-border);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -467,20 +485,20 @@
 .hm-week-bar {
   width: 100%;
   border-radius: 6px 6px 0 0;
-  background: linear-gradient(180deg, var(--plum), var(--violet-mid));
+  background: var(--hm-deep-sage);
   transition: height var(--transition-smooth);
 }
 
 .hm-week-label {
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--hm-warm-gray);
 }
 
 .hm-study-note {
   font-size: 0.74rem;
   line-height: 1.45;
-  color: var(--muted-light);
+  color: var(--hm-warm-gray);
 }
 
 /* ============================================================
@@ -498,10 +516,10 @@
   align-items: center;
   gap: 10px;
   padding: 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--hm-soft-border);
   border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--hm-white);
+  color: var(--hm-dark-brown);
   font-size: 0.85rem;
   font-weight: 600;
   text-align: left;
@@ -512,8 +530,8 @@
 }
 
 .hm-action:hover {
-  border-color: var(--border-focus);
-  background: var(--surface-dim);
+  border-color: var(--hm-deep-sage);
+  background: var(--hm-matcha-mist);
   transform: translateY(-1px);
 }
 
@@ -523,8 +541,8 @@
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: var(--surface-dim);
-  color: var(--violet-mid);
+  background: var(--hm-matcha-mist);
+  color: var(--hm-deep-sage);
   flex-shrink: 0;
 }
 
@@ -584,7 +602,7 @@
 .hm-reading-title {
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--hm-dark-brown);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -592,7 +610,7 @@
 
 .hm-reading-author {
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--hm-warm-gray);
 }
 
 .hm-reading-meta {
@@ -602,7 +620,7 @@
   gap: 8px;
   margin-top: auto;
   font-size: 0.74rem;
-  color: var(--muted);
+  color: var(--hm-warm-gray);
 }
 
 .hm-read-cta {
@@ -610,7 +628,7 @@
   align-items: center;
   gap: 3px;
   font-weight: 600;
-  color: var(--violet-mid);
+  color: var(--hm-deep-sage);
 }
 
 .hm-reading-empty,
@@ -622,7 +640,7 @@
   gap: 10px;
   padding: 26px 18px;
   text-align: center;
-  color: var(--muted);
+  color: var(--hm-warm-gray);
   font-size: 0.85rem;
   line-height: 1.5;
 }
