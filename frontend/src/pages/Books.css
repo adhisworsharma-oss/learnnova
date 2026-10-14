@@ -1,15 +1,15 @@
 /* ============================================================
    Learnova — BCA Digital Library
-   Modern university digital library: indigo/violet academic
-   palette, subject-coloured cards, smooth motion.
+   Modern university digital library: calm matcha-mint / sage
+   academic palette, subject-coloured cards, smooth motion.
    ============================================================ */
 
-/* Give the app canvas a cool academic tone while the library is open. */
+/* Give the app canvas a soft, natural matcha tone while the library is open. */
 .app-layout-main:has(.books-page) {
   background:
-    radial-gradient(900px 520px at 100% -8%, rgba(124, 58, 237, 0.10), transparent 60%),
-    radial-gradient(760px 460px at -8% 6%, rgba(14, 165, 233, 0.08), transparent 58%),
-    #eef1f8;
+    radial-gradient(900px 520px at 100% -8%, rgba(183, 205, 178, 0.34), transparent 60%),
+    radial-gradient(760px 460px at -8% 6%, rgba(201, 220, 194, 0.28), transparent 58%),
+    #f7f8f2;
 }
 
 .books-page {
@@ -46,60 +46,26 @@
    ============================================================ */
 
 .books-hero {
+  /* ---- Matcha mint hero palette ---- */
+  --hero-ink: #2f4232;          /* dark forest text */
+  --hero-ink-soft: #435b41;     /* muted dark green description */
+  --hero-sage: #536b50;         /* deep matcha */
+  --hero-muted: #64785e;        /* muted sage labels / placeholder */
+  --hero-surface: #f7f8f2;      /* warm off-white */
+  --hero-surface-mint: #eef4ea; /* very pale mint */
+  --hero-border: #d5e0d0;       /* subtle sage border */
+  --hero-border-strong: #c2d2bc;
+
   position: relative;
   overflow: hidden;
   border-radius: 22px;
   padding: 26px 28px 22px;
-  color: #ffffff;
+  color: var(--hero-ink);
+  /* Mostly solid matcha mint with a gentle, natural tonal variation. */
   background:
-    radial-gradient(120% 170% at 0% 0%, rgba(255, 255, 255, 0.18), transparent 46%),
-    radial-gradient(90% 130% at 100% 0%, rgba(236, 72, 153, 0.38), transparent 56%),
-    linear-gradient(135deg, #331a63 0%, #5b21b6 46%, #7c3aed 80%, #9333ea 100%);
-  box-shadow: 0 22px 50px -22px rgba(76, 29, 149, 0.6);
-  isolation: isolate;
-}
-
-.books-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 26px 26px;
-  -webkit-mask-image: linear-gradient(120deg, #000 10%, transparent 62%);
-  mask-image: linear-gradient(120deg, #000 10%, transparent 62%);
-  pointer-events: none;
-}
-
-.books-hero-orbs {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.books-hero-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(46px);
-  opacity: 0.55;
-}
-
-.books-hero-orb--a {
-  width: 280px;
-  height: 280px;
-  top: -130px;
-  right: -60px;
-  background: radial-gradient(circle at 40% 40%, rgba(244, 114, 182, 0.75), transparent 70%);
-}
-
-.books-hero-orb--b {
-  width: 240px;
-  height: 240px;
-  bottom: -150px;
-  right: 26%;
-  background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.55), transparent 70%);
+    radial-gradient(120% 165% at 0% 0%, rgba(247, 248, 242, 0.9), transparent 58%),
+    linear-gradient(135deg, #e4eede 0%, #d4e3cd 48%, #c9dcc2 100%);
+  box-shadow: 0 18px 40px -26px rgba(47, 66, 50, 0.4);
 }
 
 .books-hero-inner {
@@ -119,13 +85,11 @@
   place-items: center;
   width: 52px;
   height: 52px;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--hero-surface);
+  background: var(--hero-sage);
+  border: 1px solid rgba(47, 66, 50, 0.18);
   border-radius: 15px;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 18px -12px rgba(47, 66, 50, 0.7);
 }
 
 .books-hero-copy {
@@ -138,7 +102,7 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--hero-sage);
   margin-bottom: 4px;
 }
 
@@ -148,14 +112,14 @@
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.1;
-  color: #ffffff;
+  color: var(--hero-ink);
 }
 
 .books-subtitle {
   margin-top: 6px;
   font-size: 0.88rem;
   line-height: 1.55;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--hero-ink-soft);
   max-width: 62ch;
 }
 
@@ -173,7 +137,7 @@
   left: 17px;
   top: 50%;
   transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--hero-sage);
   pointer-events: none;
   transition: color var(--transition-fast);
 }
@@ -184,13 +148,11 @@
   padding: 0 46px 0 48px;
   font-size: 0.92rem;
   font-weight: 500;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: var(--hero-ink);
+  background: var(--hero-surface);
+  border: 1px solid var(--hero-border);
   border-radius: 14px;
   outline: none;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   transition:
     background var(--transition-fast),
     border-color var(--transition-fast),
@@ -199,28 +161,28 @@
 }
 
 .books-hero-search input::placeholder {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--hero-muted);
   font-weight: 400;
 }
 
 .books-hero-search input:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: #ffffff;
+  border-color: var(--hero-border-strong);
 }
 
 .books-hero-search input:focus {
   background: #ffffff;
-  color: var(--lib-ink);
-  border-color: #ffffff;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28), 0 12px 30px -14px rgba(20, 10, 50, 0.6);
+  color: var(--hero-ink);
+  border-color: #9cb49a;
+  box-shadow: 0 0 0 4px rgba(83, 107, 80, 0.16);
 }
 
 .books-hero-search:focus-within .books-search-icon {
-  color: var(--lib-accent);
+  color: var(--hero-ink);
 }
 
 .books-hero-search input:focus::placeholder {
-  color: var(--lib-muted-light);
+  color: #9cb49a;
 }
 
 .books-search-clear {
@@ -234,8 +196,8 @@
   place-items: center;
   border: none;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+  background: var(--hero-surface-mint);
+  color: var(--hero-sage);
   cursor: pointer;
   transition:
     color var(--transition-fast),
@@ -244,8 +206,8 @@
 
 .books-hero-search:focus-within .books-search-clear,
 .books-search-clear:hover {
-  color: var(--lib-ink);
-  background: var(--lib-surface-alt);
+  color: var(--hero-ink);
+  background: #dfeada;
 }
 
 /* ----- Hero stats ----- */
@@ -262,11 +224,10 @@
   flex-direction: column;
   gap: 1px;
   padding: 11px 15px;
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  border-radius: 12px;
+  background: var(--hero-surface);
+  border: 1px solid var(--hero-border);
+  box-shadow: 0 1px 2px rgba(47, 66, 50, 0.04);
 }
 
 .hero-stat-value {
@@ -274,7 +235,7 @@
   font-size: 1.35rem;
   font-weight: 700;
   line-height: 1.15;
-  color: #ffffff;
+  color: var(--hero-ink);
 }
 
 .hero-stat-label {
@@ -282,7 +243,7 @@
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.76);
+  color: var(--hero-muted);
 }
 
 /* ============================================================
@@ -1549,9 +1510,35 @@
 
 [data-theme="dark"] .app-layout-main:has(.books-page) {
   background:
-    radial-gradient(900px 520px at 100% -8%, rgba(124, 58, 237, 0.16), transparent 60%),
-    radial-gradient(760px 460px at -8% 6%, rgba(14, 165, 233, 0.12), transparent 58%),
+    radial-gradient(900px 520px at 100% -8%, rgba(83, 107, 80, 0.18), transparent 60%),
+    radial-gradient(760px 460px at -8% 6%, rgba(83, 107, 80, 0.12), transparent 58%),
     #121319;
+}
+
+[data-theme="dark"] .books-hero {
+  --hero-ink: #ecf0e8;
+  --hero-ink-soft: #c3cfbe;
+  --hero-sage: #a9bfa4;
+  --hero-muted: #93a58d;
+  --hero-surface: #232d20;
+  --hero-surface-mint: #2a3626;
+  --hero-border: rgba(169, 191, 164, 0.22);
+  --hero-border-strong: rgba(169, 191, 164, 0.34);
+
+  background:
+    radial-gradient(120% 165% at 0% 0%, rgba(83, 107, 80, 0.35), transparent 58%),
+    linear-gradient(135deg, #2b3727 0%, #232d20 48%, #1e271c 100%);
+  box-shadow: 0 18px 40px -26px rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .books-hero-search input:hover,
+[data-theme="dark"] .books-hero-search input:focus {
+  background: #2d3a29;
+}
+
+[data-theme="dark"] .books-search-clear:hover,
+[data-theme="dark"] .books-hero-search:focus-within .books-search-clear {
+  background: #33412e;
 }
 
 [data-theme="dark"] .books-page {

@@ -589,11 +589,6 @@ export default function Books() {
     <div className="books-page">
       {/* ---------- Hero ---------- */}
       <section className="books-hero">
-        <div className="books-hero-orbs" aria-hidden="true">
-          <span className="books-hero-orb books-hero-orb--a" />
-          <span className="books-hero-orb books-hero-orb--b" />
-        </div>
-
         <div className="books-hero-inner">
           <div className="books-hero-top">
             <div className="lib-logo" aria-hidden="true">
