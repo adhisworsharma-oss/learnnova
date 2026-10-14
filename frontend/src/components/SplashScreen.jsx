@@ -24,7 +24,7 @@ export default function SplashScreen({ onComplete }) {
       <div className="splash-content">
         <video
           ref={videoRef}
-          src="/Logo of Learnova with Book Icon.mp4"
+          src="/New Project 6 [ABFB030]~2.mp4"
           className="splash-video"
           autoPlay
           muted
